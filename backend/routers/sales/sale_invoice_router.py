@@ -15,6 +15,8 @@ class SaleInvoicePayload(BaseModel):
     invoiceDate: str
     customerId: int
     salesDcId: Optional[int] = None
+    addressType: Optional[str] = "billing"
+    invoiceAddress: Optional[str] = None
     itemId: int
     qty: str
     rate: str
@@ -30,12 +32,42 @@ def _connection_or_500():
     return connection
 
 
+def _ensure_sale_invoice_columns(cursor):
+    cursor.execute("ALTER TABLE sale_invoices ADD COLUMN IF NOT EXISTS address_type VARCHAR(30) DEFAULT 'billing'")
+    cursor.execute("ALTER TABLE sale_invoices ADD COLUMN IF NOT EXISTS invoice_address TEXT")
+
+
+def _resolve_invoice_address(cursor, customer_id: int, address_type: str | None, invoice_address: str | None):
+    cursor.execute(
+        """
+        SELECT address, delivery_address, city, state, pincode
+        FROM customers
+        WHERE id = %s
+        """,
+        (customer_id,),
+    )
+    customer = cursor.fetchone()
+    if customer is None:
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    selected_type = (address_type or "billing").lower()
+    billing_address = ", ".join(filter(None, [customer["address"], customer["city"], customer["state"], customer["pincode"]]))
+    delivery_address = customer["delivery_address"] or billing_address
+
+    if selected_type == "delivery":
+        return "delivery", delivery_address
+    if selected_type == "custom":
+        return "custom", (invoice_address or "").strip() or billing_address
+    return "billing", billing_address
+
+
 @router.get("/")
 def list_sale_invoices():
     connection = _connection_or_500()
     cursor = connection.cursor(cursor_factory=RealDictCursor)
 
     try:
+        _ensure_sale_invoice_columns(cursor)
         cursor.execute(
             """
             SELECT
@@ -75,6 +107,7 @@ def get_sale_invoice(invoice_id: int):
     cursor = connection.cursor(cursor_factory=RealDictCursor)
 
     try:
+        _ensure_sale_invoice_columns(cursor)
         cursor.execute(
             """
             SELECT
@@ -83,6 +116,8 @@ def get_sale_invoice(invoice_id: int):
                 si.invoice_date,
                 si.customer_id,
                 si.sales_dc_id,
+                si.address_type,
+                si.invoice_address,
                 si.subtotal,
                 si.gst_amount,
                 si.total_amount,
@@ -148,6 +183,7 @@ def create_sale_invoice(payload: SaleInvoicePayload):
     total_amount = subtotal + gst_amount
 
     try:
+        _ensure_sale_invoice_columns(cursor)
         cursor.execute("SELECT id FROM customers WHERE id = %s", (data["customerId"],))
         if cursor.fetchone() is None:
             raise HTTPException(status_code=404, detail="Customer not found")
@@ -161,13 +197,20 @@ def create_sale_invoice(payload: SaleInvoicePayload):
             if cursor.fetchone() is None:
                 raise HTTPException(status_code=404, detail="Sales DC not found")
 
+        address_type, resolved_invoice_address = _resolve_invoice_address(
+            cursor,
+            data["customerId"],
+            data.get("addressType"),
+            data.get("invoiceAddress"),
+        )
+
         cursor.execute(
             """
             INSERT INTO sale_invoices (
-                invoice_no, invoice_date, customer_id, sales_dc_id,
+                invoice_no, invoice_date, customer_id, sales_dc_id, address_type, invoice_address,
                 subtotal, gst_amount, total_amount, status, remarks
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id, invoice_no, invoice_date, total_amount, status
             """,
             (
@@ -175,6 +218,8 @@ def create_sale_invoice(payload: SaleInvoicePayload):
                 data["invoiceDate"],
                 data["customerId"],
                 data["salesDcId"],
+                address_type,
+                resolved_invoice_address,
                 subtotal,
                 gst_amount,
                 total_amount,
@@ -257,11 +302,8 @@ def delete_sale_invoice(invoice_id: int):
         connection.commit()
 
         return {
-          "message": "Sale invoice deleted successfully",
-          "invoice": {
-              "id": invoice["id"],
-              "invoice_no": invoice["invoice_no"],
-          },
+            "message": "Sale invoice deleted successfully",
+            "invoice": invoice,
         }
     except HTTPException:
         connection.rollback()

@@ -10,31 +10,15 @@ import {
   createTaxInvoice,
   deleteSaleInvoice,
   deleteTaxInvoice,
+  getCompanyInfo,
   getCustomers,
   getItems,
   getSalesDCs,
   getTaxInvoiceById,
   updateTaxInvoice,
 } from '../../lib/api'
-import { COMPANY_PROFILE } from '../print/companyProfile'
 
 const emptyRow = () => ({ itemName: '', itemId: '', quantity: '', rate: '', tax: '18', amount: '' })
-
-function formatMoney(value) {
-  return Number(value || 0).toLocaleString('en-IN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
-}
-
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;')
-}
 
 export default function InvoiceFormPage({ type }) {
   const { id } = useParams()
@@ -44,6 +28,7 @@ export default function InvoiceFormPage({ type }) {
   const [customers, setCustomers] = useState([])
   const [items, setItems] = useState([])
   const [salesDCs, setSalesDCs] = useState([])
+  const [companyInfo, setCompanyInfo] = useState(null)
   const dbBacked = type === 'Tax Invoice' || type === 'Sale Invoice'
   const showStatusField = type !== 'Tax Invoice'
   const [loadingMasters, setLoadingMasters] = useState(dbBacked)
@@ -95,6 +80,8 @@ export default function InvoiceFormPage({ type }) {
           invoiceDate: invoice.invoice_date || '',
           party: invoice.customer_id ? String(invoice.customer_id) : '',
           referenceDC: invoice.sales_dc_id ? String(invoice.sales_dc_id) : '',
+          addressType: invoice.address_type || 'billing',
+          invoiceAddress: invoice.invoice_address || '',
           remarks: invoice.remarks || '',
         })
         setRows([
@@ -116,6 +103,18 @@ export default function InvoiceFormPage({ type }) {
 
     loadInvoice()
   }, [id, type])
+
+  useEffect(() => {
+    async function loadCompany() {
+      try {
+        const result = await getCompanyInfo()
+        setCompanyInfo(result?.company || null)
+      } catch {
+      }
+    }
+
+    loadCompany()
+  }, [])
 
   const customerOptions = useMemo(
     () => customers.map((customer) => ({
@@ -146,10 +145,22 @@ export default function InvoiceFormPage({ type }) {
     [customers, form.party]
   )
 
-  const selectedSalesDc = useMemo(
-    () => salesDCs.find((dc) => String(dc.id) === String(form.referenceDC || '')),
-    [salesDCs, form.referenceDC]
-  )
+  useEffect(() => {
+    if (!selectedCustomer) return
+
+    const addressType = form.addressType || 'billing'
+    if (addressType === 'custom') return
+
+    const billingAddress = [selectedCustomer.address, selectedCustomer.city, selectedCustomer.state, selectedCustomer.pincode].filter(Boolean).join(', ')
+    const deliveryAddress = selectedCustomer.delivery_address || billingAddress
+    const nextAddress = addressType === 'delivery' ? deliveryAddress : billingAddress
+
+    setForm((current) => (
+      current.invoiceAddress === nextAddress && current.addressType === addressType
+        ? current
+        : { ...current, addressType, invoiceAddress: nextAddress }
+    ))
+  }, [selectedCustomer, form.addressType])
 
   const subtotal = useMemo(() => rows.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0), [rows])
   const gst = useMemo(() => rows.reduce((s, r) => {
@@ -159,15 +170,17 @@ export default function InvoiceFormPage({ type }) {
   }, 0), [rows])
 
   function handlePrintInvoice() {
-    if (type !== 'Tax Invoice' || !id) {
+    if (type === 'Tax Invoice' && id) {
+      window.open(`/invoice/tax/${id}/print`, '_blank', 'noopener,noreferrer')
       return
     }
-    window.open(`/invoice/tax/${id}/print`, '_blank', 'noopener,noreferrer')
+    if (type === 'Sale Invoice' && id) {
+      window.open(`/invoice/sale/${id}/print`, '_blank', 'noopener,noreferrer')
+    }
   }
 
   async function handleSave() {
     if (!dbBacked) {
-      alert('Saved!')
       return
     }
 
@@ -187,6 +200,8 @@ export default function InvoiceFormPage({ type }) {
         invoiceDate: form.invoiceDate,
         customerId: Number(form.party),
         salesDcId: form.referenceDC ? Number(form.referenceDC) : null,
+        addressType: form.addressType || 'billing',
+        invoiceAddress: form.invoiceAddress || '',
         itemId: Number(firstRow.itemId),
         qty: firstRow.quantity,
         rate: firstRow.rate,
@@ -201,15 +216,20 @@ export default function InvoiceFormPage({ type }) {
       const result = type === 'Tax Invoice'
         ? (id ? await updateTaxInvoice(id, payload) : await createTaxInvoice(payload))
         : await createSaleInvoice(payload)
+
       setSuccess(`${type} saved. ID: ${result.invoice?.id ?? '-'} | Total: ${result.totals?.total_amount ?? '-'}`)
-      if (type === 'Tax Invoice' && result.invoice?.id) {
-        navigate(`/invoice/tax/${result.invoice.id}`, { replace: true })
-        return
+
+      if (result.invoice?.id) {
+        if (type === 'Tax Invoice') {
+          navigate(`/invoice/tax/${result.invoice.id}`, { replace: true })
+          return
+        }
       }
+
       setForm({})
       setRows([emptyRow()])
     } catch (saveError) {
-      setError(saveError.message || 'Unable to save tax invoice.')
+      setError(saveError.message || `Unable to save ${type.toLowerCase()}.`)
     } finally {
       setSaving(false)
     }
@@ -247,9 +267,9 @@ export default function InvoiceFormPage({ type }) {
   return (
     <PageContainer
       title={id ? `Edit ${type}` : `New ${type}`}
-      actions={
+      actions={(
         <div className="flex items-center gap-2 flex-wrap">
-          {type === 'Tax Invoice' && (
+          {id && (type === 'Tax Invoice' || type === 'Sale Invoice') && (
             <button className="btn-secondary" onClick={handlePrintInvoice}>
               <Printer size={15} />
               Print / PDF
@@ -262,39 +282,50 @@ export default function InvoiceFormPage({ type }) {
             loading={saving}
           />
         </div>
-      }
+      )}
     >
-      {error && (
-        <div style={{ marginBottom: '16px', padding: '12px 14px', borderRadius: '10px', background: '#fee2e2', color: '#991b1b', fontSize: '13px', fontWeight: '700' }}>
-          {error}
-        </div>
-      )}
-      {success && (
-        <div style={{ marginBottom: '16px', padding: '12px 14px', borderRadius: '10px', background: '#dcfce7', color: '#166534', fontSize: '13px', fontWeight: '700' }}>
-          {success}
-        </div>
-      )}
-      {loadingMasters && (
-        <div style={{ marginBottom: '16px', padding: '12px 14px', borderRadius: '10px', background: '#eef2ff', color: '#4338ca', fontSize: '13px', fontWeight: '700' }}>
-          Loading {type} masters...
-        </div>
-      )}
-      {loadingInvoice && (
-        <div style={{ marginBottom: '16px', padding: '12px 14px', borderRadius: '10px', background: '#fef3c7', color: '#92400e', fontSize: '13px', fontWeight: '700' }}>
-          Loading saved invoice details...
-        </div>
-      )}
+      {error && <div style={{ marginBottom: '16px', padding: '12px 14px', borderRadius: '10px', background: '#fee2e2', color: '#991b1b', fontSize: '13px', fontWeight: '700' }}>{error}</div>}
+      {success && <div style={{ marginBottom: '16px', padding: '12px 14px', borderRadius: '10px', background: '#dcfce7', color: '#166534', fontSize: '13px', fontWeight: '700' }}>{success}</div>}
+      {loadingMasters && <div style={{ marginBottom: '16px', padding: '12px 14px', borderRadius: '10px', background: '#eef2ff', color: '#4338ca', fontSize: '13px', fontWeight: '700' }}>Loading {type} masters...</div>}
+      {loadingInvoice && <div style={{ marginBottom: '16px', padding: '12px 14px', borderRadius: '10px', background: '#fef3c7', color: '#92400e', fontSize: '13px', fontWeight: '700' }}>Loading saved invoice details...</div>}
 
       <SectionCard title="Invoice Information" icon={Receipt}>
         <FormGrid>
           <FormInput label="Invoice Number" required {...bind('invoiceNumber')} placeholder="INV-0001" />
           <DatePicker label="Invoice Date" required {...bind('invoiceDate')} />
-          <SelectDropdown label="Customer" options={dbBacked ? customerOptions : []} {...bind('party')} />
-          <SelectDropdown label="Reference Sales DC" options={dbBacked ? salesDcOptions : []} {...bind('referenceDC')} />
+          <SelectDropdown label="Customer" options={customerOptions} {...bind('party')} />
+          <SelectDropdown label="Reference Sales DC" options={salesDcOptions} {...bind('referenceDC')} />
+          <SelectDropdown
+            label="Invoice Address Type"
+            options={[
+              { value: 'billing', label: 'Billing Address' },
+              { value: 'delivery', label: 'Delivery Address' },
+              { value: 'custom', label: 'Custom Address' },
+            ]}
+            {...bind('addressType')}
+          />
           {showStatusField && (
             <SelectDropdown label="Status" options={['Draft', 'Approved', 'Paid', 'Cancelled']} {...bind('status')} />
           )}
         </FormGrid>
+
+        <div style={{ marginTop: '16px' }}>
+          <label className="form-label">Invoice Address</label>
+          <textarea
+            rows={3}
+            value={form.invoiceAddress || ''}
+            onChange={(event) => set('invoiceAddress', event.target.value)}
+            className="form-textarea"
+            placeholder="Address to print in invoice"
+            readOnly={(form.addressType || 'billing') !== 'custom'}
+          />
+        </div>
+
+        <div style={{ marginTop: '16px', padding: '12px 14px', borderRadius: '10px', background: '#eef4ff', color: '#0b5cab', fontSize: '13px', fontWeight: '600', lineHeight: '1.7' }}>
+          <div><strong>Demo Company:</strong> {companyInfo?.print_name || companyInfo?.company_name || 'Zyger ERP Demo'}</div>
+          <div><strong>Customer:</strong> {selectedCustomer?.customer_name || '-'}</div>
+          <div><strong>Selected Invoice Address:</strong> {form.invoiceAddress || '-'}</div>
+        </div>
       </SectionCard>
 
       <SectionCard title="Item Details" icon={List}>

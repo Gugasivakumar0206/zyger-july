@@ -381,8 +381,8 @@ export default function TopNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [companyBrand, setCompanyBrand] = useState({
     logo: cachedBrand?.logo || logo,
-    name: cachedBrand?.name || 'AR Precision',
-    subtitle: 'Enterprise System',
+    name: cachedBrand?.name || 'Zyger ERP Demo',
+    subtitle: 'Demo Version',
   })
   const location = useLocation()
 
@@ -399,8 +399,8 @@ export default function TopNavbar() {
 
         const nextBrand = {
           logo: company.company_logo || logo,
-          name: company.print_name || company.company_name || 'AR Precision',
-          subtitle: 'Enterprise System',
+          name: company.print_name || company.company_name || 'Zyger ERP Demo',
+          subtitle: 'Demo Version',
         }
 
         setCompanyBrand(nextBrand)
@@ -420,8 +420,8 @@ export default function TopNavbar() {
         const parsed = JSON.parse(raw)
         setCompanyBrand({
           logo: parsed.logo || logo,
-          name: parsed.name || 'AR Precision',
-          subtitle: parsed.subtitle || 'Enterprise System',
+          name: parsed.name || 'Zyger ERP Demo',
+          subtitle: parsed.subtitle || 'Demo Version',
         })
       } catch {
       }

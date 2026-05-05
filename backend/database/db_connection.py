@@ -13,7 +13,7 @@ def get_connection():
             host=os.getenv("DB_HOST", "localhost"),
             user=os.getenv("DB_USER", "postgres"),
             password=os.getenv("DB_PASSWORD", "password"),
-            dbname=os.getenv("DB_NAME", "ar_precision_erp"),
+            dbname=os.getenv("DB_NAME", "zyger_erp_demo"),
             port=int(os.getenv("DB_PORT", "5432")),
             connect_timeout=5,
         )

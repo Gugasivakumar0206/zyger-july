@@ -76,7 +76,7 @@ export default function App() {
   if (authLoading) {
     return (
       <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#eef4ff', color: '#032d60', fontFamily: 'DM Sans, sans-serif', fontSize: '18px', fontWeight: '700' }}>
-        Loading AR Precision...
+        Loading Zyger ERP Demo...
       </div>
     )
   }

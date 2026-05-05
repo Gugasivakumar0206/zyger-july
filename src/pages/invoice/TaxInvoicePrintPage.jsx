@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import logo from '../../assets/ar-precision-logo.svg'
-import { getTaxInvoiceById } from '../../lib/api'
-import { COMPANY_PROFILE } from '../print/companyProfile'
+import { getCompanyInfo, getTaxInvoiceById } from '../../lib/api'
 
 function formatDate(value) {
   if (!value) return '-'
@@ -21,6 +20,7 @@ function formatMoney(value) {
 export default function TaxInvoicePrintPage() {
   const { id } = useParams()
   const [record, setRecord] = useState(null)
+  const [companyInfo, setCompanyInfo] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
@@ -29,8 +29,12 @@ export default function TaxInvoicePrintPage() {
       try {
         setLoading(true)
         setError('')
-        const result = await getTaxInvoiceById(id)
-        setRecord(result)
+        const [invoiceResult, companyResult] = await Promise.all([
+          getTaxInvoiceById(id),
+          getCompanyInfo(),
+        ])
+        setRecord(invoiceResult)
+        setCompanyInfo(companyResult?.company || null)
       } catch (loadError) {
         setError(loadError.message || 'Unable to load tax invoice print preview.')
       } finally {
@@ -49,8 +53,13 @@ export default function TaxInvoicePrintPage() {
 
   const billedAddress = useMemo(() => {
     if (!record) return '-'
-    return [record.address, record.city, record.state, record.pincode].filter(Boolean).join(', ')
+    return record.invoice_address || [record.address, record.city, record.state, record.pincode].filter(Boolean).join(', ')
   }, [record])
+
+  const companyDisplayAddress = useMemo(() => {
+    if (!companyInfo) return '-'
+    return [companyInfo.address, companyInfo.city, companyInfo.state, companyInfo.pincode].filter(Boolean).join(', ')
+  }, [companyInfo])
 
   if (loading) return <div style={{ padding: '40px', fontFamily: 'Arial, sans-serif' }}>Loading tax invoice print preview...</div>
   if (error) return <div style={{ padding: '40px', fontFamily: 'Arial, sans-serif', color: '#b91c1c' }}>{error}</div>
@@ -84,16 +93,16 @@ export default function TaxInvoicePrintPage() {
           <div style={{ border: '1px solid #4b5563' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '88px 1fr', gap: '14px', alignItems: 'center', padding: '14px', borderBottom: '1px solid #4b5563' }}>
               <div style={{ width: '76px', height: '76px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <img src={logo} alt={COMPANY_PROFILE.logoAlt} style={{ width: '68px', height: '68px', objectFit: 'contain' }} />
+                <img src={companyInfo?.company_logo || logo} alt={companyInfo?.print_name || companyInfo?.company_name || 'Zyger ERP Demo'} style={{ width: '68px', height: '68px', objectFit: 'contain' }} />
               </div>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '28px', fontWeight: 800 }}>{COMPANY_PROFILE.name}</div>
-                <div style={{ fontSize: '13px', marginTop: '4px' }}>{COMPANY_PROFILE.address}</div>
+                <div style={{ fontSize: '28px', fontWeight: 800 }}>{companyInfo?.print_name || companyInfo?.company_name || 'Zyger ERP Demo'}</div>
+                <div style={{ fontSize: '13px', marginTop: '4px' }}>{companyDisplayAddress}</div>
                 <div style={{ fontSize: '13px', marginTop: '6px', fontWeight: 700 }}>
-                  PAN No: {COMPANY_PROFILE.pan} , GSTIN: {COMPANY_PROFILE.gstin}
+                  PAN No: {companyInfo?.pan_it_no || '-'} , GSTIN: {companyInfo?.gstin || '-'}
                 </div>
                 <div style={{ fontSize: '13px', marginTop: '4px' }}>
-                  Email id: {COMPANY_PROFILE.email} &nbsp;&nbsp; Phone No: {COMPANY_PROFILE.phone}
+                  Email id: {companyInfo?.email || '-'} &nbsp;&nbsp; Phone No: {companyInfo?.mobile_no || '-'}
                 </div>
               </div>
             </div>
@@ -189,7 +198,7 @@ export default function TaxInvoicePrintPage() {
                   <div>1) Goods once sold will not be taken back or exchanged.</div>
                   <div>2) Our responsibility ceases once the goods leave our premises.</div>
                   <div>3) Interest may be payable if invoice is not paid within due days.</div>
-                  <div>4) Payments are to be made by cheque/draft in favour of {COMPANY_PROFILE.name}.</div>
+                  <div>4) Payments are to be made by cheque/draft in favour of {companyInfo?.print_name || companyInfo?.company_name || 'Zyger ERP Demo'}.</div>
                 </div>
                 <div style={{ marginTop: '40px', textAlign: 'center', fontWeight: 700 }}>Authorised Signatory</div>
               </div>
