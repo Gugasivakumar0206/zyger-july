@@ -6,12 +6,12 @@ import { createCustomer, getCustomers } from '../../lib/api'
 /* ─── Shared Field Components ───────────────────────────────────────────── */
 function Label({ text, required }) {
   return (
-    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#5C3D61', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '5px' }}>
+    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#0f4c81', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '5px' }}>
       {text}{required && <span style={{ color: '#ef4444', marginLeft: '3px' }}>*</span>}
     </label>
   )
 }
-const inputBase = { width: '100%', padding: '9px 12px', fontSize: '13px', fontWeight: '600', border: '1.5px solid rgba(143,101,147,0.22)', borderRadius: '8px', outline: 'none', color: '#0f172a', background: 'rgba(255,255,255,0.9)', transition: 'border-color 0.15s, box-shadow 0.15s', fontFamily: 'inherit' }
+const inputBase = { width: '100%', padding: '9px 12px', fontSize: '13px', fontWeight: '600', border: '1.5px solid rgba(59,130,246,0.24)', borderRadius: '8px', outline: 'none', color: '#0f172a', background: 'rgba(255,255,255,0.96)', transition: 'border-color 0.15s, box-shadow 0.15s', fontFamily: 'inherit' }
 const focusStyle = (e) => { e.target.style.borderColor = '#4facfe'; e.target.style.boxShadow = '0 0 0 3px rgba(79,172,254,0.15)' }
 const blurStyle  = (e) => { e.target.style.borderColor = 'rgba(79,172,254,0.22)'; e.target.style.boxShadow = 'none' }
 
@@ -56,7 +56,7 @@ function Checkbox({ label, checked, onChange }) {
       }}>
         {checked && <svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4L4 7.5L10 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
       </div>
-      <span style={{ fontSize: '13px', fontWeight: '600', color: '#5C3D61' }}>{label}</span>
+      <span style={{ fontSize: '13px', fontWeight: '600', color: '#0f4c81' }}>{label}</span>
     </label>
   )
 }
@@ -64,8 +64,8 @@ function Checkbox({ label, checked, onChange }) {
 /* ─── Section Card ───────────────────────────────────────────────────────── */
 function Section({ title, icon: Icon, color, children }) {
   return (
-    <div style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', borderRadius: '14px', border: '1px solid #e4d4e6', boxShadow: '0 4px 20px rgba(143,101,147,0.08)', marginBottom: '20px', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '13px 20px', background: '#8F6593' }}>
+    <div style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(12px)', borderRadius: '14px', border: '1px solid #d7e8ff', boxShadow: '0 4px 20px rgba(59,130,246,0.10)', marginBottom: '20px', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '13px 20px', background: 'linear-gradient(135deg, #0f5cab 0%, #3b82f6 100%)' }}>
         <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Icon size={15} color="#fff" />
         </div>
@@ -88,7 +88,7 @@ const CURRENCIES = ['INR - Indian Rupee','USD - US Dollar','EUR - Euro','GBP - B
 function ContactRow({ contact, onChange, onRemove, index }) {
   const set = (k, v) => onChange({ ...contact, [k]: v })
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 36px', gap: '10px', alignItems: 'end', padding: '12px', background: 'rgba(143,101,147,0.04)', borderRadius: '10px', marginBottom: '8px', border: '1px solid rgba(143,101,147,0.1)' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 36px', gap: '10px', alignItems: 'end', padding: '12px', background: 'rgba(59,130,246,0.05)', borderRadius: '10px', marginBottom: '8px', border: '1px solid rgba(59,130,246,0.12)' }}>
       <Input label="Contact Name" value={contact.name} onChange={e => set('name', e.target.value)} placeholder="Full name" />
       <Input label="Designation" value={contact.designation} onChange={e => set('designation', e.target.value)} placeholder="Manager / Director" />
       <Input label="Mobile" value={contact.mobile} onChange={e => set('mobile', e.target.value)} placeholder="+91 00000 00000" />
@@ -104,7 +104,7 @@ function ContactRow({ contact, onChange, onRemove, index }) {
 function BankRow({ bank, onChange, onRemove }) {
   const set = (k, v) => onChange({ ...bank, [k]: v })
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 36px', gap: '10px', alignItems: 'end', padding: '12px', background: 'rgba(143,101,147,0.04)', borderRadius: '10px', marginBottom: '8px', border: '1px solid rgba(143,101,147,0.1)' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 36px', gap: '10px', alignItems: 'end', padding: '12px', background: 'rgba(59,130,246,0.05)', borderRadius: '10px', marginBottom: '8px', border: '1px solid rgba(59,130,246,0.12)' }}>
       <Input label="Bank Name" value={bank.bankName} onChange={e => set('bankName', e.target.value)} placeholder="Bank name" />
       <Input label="Account No" value={bank.accountNo} onChange={e => set('accountNo', e.target.value)} placeholder="Account number" />
       <Input label="IFSC Code" value={bank.ifsc} onChange={e => set('ifsc', e.target.value)} placeholder="XXXXXXXXXX" />
@@ -120,7 +120,7 @@ function BankRow({ bank, onChange, onRemove }) {
 /* ─── Add Row Button ─────────────────────────────────────────────────────── */
 function AddRowBtn({ label, onClick }) {
   return (
-    <button onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', fontSize: '12px', fontWeight: '700', border: '1.5px dashed rgba(143,101,147,0.4)', borderRadius: '8px', background: 'rgba(143,101,147,0.05)', color: '#8F6593', cursor: 'pointer', marginTop: '4px' }}
+    <button onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', fontSize: '12px', fontWeight: '700', border: '1.5px dashed rgba(59,130,246,0.42)', borderRadius: '8px', background: 'rgba(59,130,246,0.06)', color: '#0f5cab', cursor: 'pointer', marginTop: '4px' }}
       onMouseEnter={e => e.currentTarget.style.background = 'rgba(79,172,254,0.12)'}
       onMouseLeave={e => e.currentTarget.style.background = 'rgba(79,172,254,0.05)'}
     >
@@ -228,11 +228,11 @@ export default function CustomerCreationPage() {
         {/* Page Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#8F6593', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(79,172,254,0.35)' }}>
+            <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'linear-gradient(135deg, #0f5cab 0%, #3b82f6 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(79,172,254,0.35)' }}>
               <Users size={20} color="#fff" />
             </div>
             <div>
-              <h1 style={{ fontSize: '20px', fontWeight: '800', margin: 0, background: '#8F6593', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontFamily: 'Sora,sans-serif' }}>
+              <h1 style={{ fontSize: '20px', fontWeight: '800', margin: 0, background: 'linear-gradient(135deg, #0f5cab 0%, #3b82f6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontFamily: 'Sora,sans-serif' }}>
                 Customer Creation
               </h1>
               <p style={{ fontSize: '13px', color: '#475569', margin: 0, marginTop: '2px', fontWeight: '600' }}>Master → Customer</p>
@@ -243,7 +243,7 @@ export default function CustomerCreationPage() {
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(219,238,255,0.5)'}
               onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.9)'}
             ><Home size={14} /> Back</button>
-            <button onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 22px', fontSize: '13px', fontWeight: '700', border: 'none', borderRadius: '10px', background: '#8F6593', color: '#fff', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, boxShadow: '0 4px 14px rgba(79,172,254,0.35)' }}>
+            <button onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 22px', fontSize: '13px', fontWeight: '700', border: 'none', borderRadius: '10px', background: 'linear-gradient(135deg, #0f5cab 0%, #3b82f6 100%)', color: '#fff', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, boxShadow: '0 4px 14px rgba(79,172,254,0.35)' }}>
               <Save size={14} /> {saving ? 'Saving...' : 'Save Customer'}
             </button>
           </div>
@@ -309,7 +309,7 @@ export default function CustomerCreationPage() {
             <Input label="Website" {...bind('website')} placeholder="https://www.customer.com" />
             <Input label="Fax" {...bind('fax')} placeholder="Fax number" />
           </div>
-          <p style={{ fontSize: '11px', fontWeight: '700', color: '#8F6593', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px' }}>Contact Persons</p>
+          <p style={{ fontSize: '11px', fontWeight: '700', color: '#0f5cab', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px' }}>Contact Persons</p>
           {contacts.map((c, i) => (
             <ContactRow key={i} index={i} contact={c} onChange={v => updateContact(i, v)} onRemove={() => removeContact(i)} />
           ))}
@@ -356,7 +356,7 @@ export default function CustomerCreationPage() {
 
           {/* Bank Details */}
           <div style={{ marginTop: '20px' }}>
-            <p style={{ fontSize: '11px', fontWeight: '700', color: '#8F6593', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px' }}>Bank Details</p>
+            <p style={{ fontSize: '11px', fontWeight: '700', color: '#0f5cab', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px' }}>Bank Details</p>
             {banks.map((b, i) => (
               <BankRow key={i} bank={b} onChange={v => updateBank(i, v)} onRemove={() => removeBank(i)} />
             ))}
@@ -422,7 +422,7 @@ export default function CustomerCreationPage() {
           <button onClick={() => navigate(-1)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 20px', fontSize: '13px', fontWeight: '700', border: '1.5px solid #c9a8cc', borderRadius: '10px', background: 'rgba(255,255,255,0.9)', color: '#334155', cursor: 'pointer' }}>
             <Home size={14} /> Back
           </button>
-          <button onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 26px', fontSize: '13px', fontWeight: '700', border: 'none', borderRadius: '10px', background: '#8F6593', color: '#fff', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, boxShadow: '0 4px 14px rgba(79,172,254,0.35)' }}>
+          <button onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 26px', fontSize: '13px', fontWeight: '700', border: 'none', borderRadius: '10px', background: 'linear-gradient(135deg, #0f5cab 0%, #3b82f6 100%)', color: '#fff', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, boxShadow: '0 4px 14px rgba(79,172,254,0.35)' }}>
             <Save size={14} /> {saving ? 'Saving...' : 'Save Customer'}
           </button>
         </div>
