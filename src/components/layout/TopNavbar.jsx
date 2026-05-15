@@ -136,13 +136,13 @@ function NavDropdown({ item, isOpen, onToggle, onClose }) {
   return (
     <div ref={ref} style={{ position: 'relative', height: '100%', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
       <button onClick={onToggle} style={{
-        display: 'flex', alignItems: 'center', gap: '4px',
-        padding: '0 12px', height: '100%',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+        padding: '0 13px', height: '34px',
         fontSize: '12px', fontWeight: '700',
         background: isActive || isOpen ? 'rgba(255,255,255,0.2)' : 'transparent',
-        border: 'none', cursor: 'pointer', borderRadius: '6px', margin: '5px 1px',
+        border: 'none', cursor: 'pointer', borderRadius: '8px', margin: '0',
         color: isActive || isOpen ? '#fff' : C.menuText,
-        transition: 'all 0.15s', fontFamily: "'DM Sans', sans-serif",
+        transition: 'all 0.15s', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap',
       }}
         onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = '#fff' }}
         onMouseLeave={e => { if (!isActive && !isOpen) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.menuText } }}
@@ -442,7 +442,7 @@ export default function TopNavbar() {
       <style>{`
         .erp-header { position:sticky; top:0; z-index:100; background:${C.navbarBg}; box-shadow:0 4px 20px rgba(3,45,96,0.32); }
         .erp-topbar { border-bottom:1px solid rgba(255,255,255,0.07); }
-        .erp-topbar-inner { max-width:1600px; margin:0 auto; padding:0 24px; display:flex; align-items:center; height:58px; gap:16px; }
+        .erp-topbar-inner { max-width:1600px; margin:0 auto; padding:0 22px; display:flex; align-items:center; height:58px; gap:16px; }
         .erp-logo { display:flex; align-items:center; gap:12px; text-decoration:none; flex-shrink:0; min-width:0; }
         .erp-logo-icon { width:40px; height:40px; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.16); border-radius:11px; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px rgba(1,118,211,0.22); flex-shrink:0; overflow:hidden; }
         .erp-logo-img { width:32px; height:32px; object-fit:contain; display:block; border-radius:8px; background:#ffffff; padding:2px; }
@@ -458,7 +458,7 @@ export default function TopNavbar() {
         .erp-spacer { flex:1; }
         .erp-right { display:flex; align-items:center; gap:6px; }
         .erp-navrow { background:${C.navRowBg}; border-bottom:1px solid rgba(255,255,255,0.06); }
-        .erp-navrow-inner { max-width:1600px; margin:0 auto; padding:0 16px; display:flex; align-items:stretch; height:40px; gap:0; overflow:visible; }
+        .erp-navrow-inner { max-width:1600px; margin:0 auto; padding:0 14px; display:flex; align-items:center; height:42px; gap:6px; overflow:visible; }
         .erp-hamburger { display:none; width:36px; height:36px; border-radius:8px; border:none; background:transparent; cursor:pointer; align-items:center; justify-content:center; color:#d8ecff; }
         .erp-mobile-menu { background:${C.navbarBg}; border-top:1px solid rgba(255,255,255,0.07); max-height:80vh; overflow-y:auto; }
         .erp-mobile-inner { max-width:1600px; margin:0 auto; padding:14px 16px; }
@@ -509,11 +509,11 @@ export default function TopNavbar() {
               const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/')
               return (
                 <Link key={item.label} to={item.path} onClick={closeAll} style={{
-                  display: 'flex', alignItems: 'center', gap: '5px',
-                  padding: '0 12px', height: '100%', fontSize: '12px', fontWeight: '700',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                  padding: '0 13px', height: '34px', fontSize: '12px', fontWeight: '700',
                   textDecoration: 'none', color: isActive ? '#fff' : C.menuText,
                   background: isActive ? 'rgba(255,255,255,0.2)' : 'transparent',
-                  borderRadius: '6px', margin: '5px 1px', whiteSpace: 'nowrap', flexShrink: 0,
+                  borderRadius: '8px', margin: '0', whiteSpace: 'nowrap', flexShrink: 0,
                   transition: 'all 0.15s', fontFamily: "'DM Sans',sans-serif",
                 }}
                   onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = '#fff' } }}

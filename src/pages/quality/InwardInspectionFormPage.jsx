@@ -9,6 +9,7 @@ import {
   getInwardInspectionSourceDetail,
   getInwardInspectionSources,
   getNextInwardInspectionNumber,
+  getRacks,
 } from '../../lib/api'
 
 function todayValue() {
@@ -25,7 +26,10 @@ function decimalValue(value) {
 }
 
 function formatQty(value) {
-  return Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+  return Number(value || 0).toLocaleString('en-IN', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })
 }
 
 export default function InwardInspectionFormPage() {
@@ -39,6 +43,7 @@ export default function InwardInspectionFormPage() {
   const [sourceHeader, setSourceHeader] = useState(null)
   const [sourceCatalog, setSourceCatalog] = useState([])
   const [sourceItems, setSourceItems] = useState([])
+  const [rackOptions, setRackOptions] = useState([])
   const [currentUserName, setCurrentUserName] = useState('')
 
   const [form, setForm] = useState({
@@ -55,15 +60,29 @@ export default function InwardInspectionFormPage() {
       try {
         setBootLoading(true)
         setError('')
-        const [numberResult, currentUser] = await Promise.all([
+
+        const [numberResult, currentUser, racks] = await Promise.all([
           getNextInwardInspectionNumber(),
           getCurrentUser(),
+          getRacks(),
         ])
+
         setForm((current) => ({
           ...current,
           inspectionNo: numberResult.inspection_no || '',
         }))
+
         setCurrentUserName(currentUser?.full_name || currentUser?.email || '')
+
+        setRackOptions(
+          (Array.isArray(racks) ? racks : [])
+            .filter((rack) => rack.isActive !== false)
+            .map((rack) => ({
+              value: rack.rackName || rack.rackCode,
+              key: rack.rackCode || rack.rackName,
+              label: [rack.rackCode, rack.rackName, rack.location].filter(Boolean).join(' - '),
+            }))
+        )
       } catch (bootError) {
         setError(bootError.message || 'Unable to prepare inward inspection form.')
       } finally {
@@ -83,6 +102,7 @@ export default function InwardInspectionFormPage() {
         setSourceCatalog([])
         setSourceItems([])
         setForm((current) => ({ ...current, purchaseInwardId: '', companyName: '' }))
+
         const result = await getInwardInspectionSources(form.inwardType)
         setSourceHeaders(result.rows || [])
       } catch (loadError) {
@@ -103,7 +123,9 @@ export default function InwardInspectionFormPage() {
       try {
         setSourceLoading(true)
         setError('')
+
         const result = await getInwardInspectionSourceDetail(form.purchaseInwardId)
+
         setSourceHeader(result.header || null)
         setSourceCatalog(result.items || [])
         setSourceItems(
@@ -126,6 +148,7 @@ export default function InwardInspectionFormPage() {
             rejection_reason: '',
           }))
         )
+
         setForm((current) => ({
           ...current,
           companyName: result.header?.company_name || '',
@@ -178,6 +201,7 @@ export default function InwardInspectionFormPage() {
         if (key === 'source_item_id') {
           const selected = sourceCatalog.find((item) => String(item.source_item_id) === String(value))
           if (!selected) return row
+
           return {
             ...row,
             source_item_id: selected.source_item_id,
@@ -198,6 +222,7 @@ export default function InwardInspectionFormPage() {
         const rejected = decimalValue(nextRow.rejected_qty)
         const rework = decimalValue(nextRow.rework_qty)
         const accepted = Math.max(received - rejected - rework, 0)
+
         nextRow.accepted_qty = String(accepted)
         return nextRow
       })
@@ -239,6 +264,7 @@ export default function InwardInspectionFormPage() {
       setLoading(true)
       setError('')
       setSuccess('')
+
       const result = await createInwardInspection({
         inspection_date: form.inspectionDate,
         inward_type: form.inwardType,
@@ -260,7 +286,9 @@ export default function InwardInspectionFormPage() {
           attachment: row.attachment || '',
         })),
       })
+
       setSuccess(result.message || 'Inward inspection saved successfully.')
+
       if (result.inspection?.id) {
         setTimeout(() => navigate(`/quality/inward-inspection/${result.inspection.id}`), 700)
       }
@@ -282,11 +310,13 @@ export default function InwardInspectionFormPage() {
           {error}
         </div>
       )}
+
       {success && (
         <div style={{ marginBottom: '16px', padding: '12px 14px', borderRadius: '10px', background: '#dcfce7', color: '#166534', fontSize: '13px', fontWeight: '700' }}>
           {success}
         </div>
       )}
+
       {(bootLoading || sourceLoading) && (
         <div style={{ marginBottom: '16px', padding: '12px 14px', borderRadius: '10px', background: '#eef2ff', color: '#4338ca', fontSize: '13px', fontWeight: '700' }}>
           Loading inward inspection details...
@@ -364,11 +394,7 @@ export default function InwardInspectionFormPage() {
                 <tr key={row.source_item_id} className="border-b border-slate-100 align-top">
                   <td className="px-3 py-3">{index + 1}</td>
                   <td className="px-3 py-3 min-w-56">
-                    <select
-                      className="form-select min-w-56"
-                      value={row.source_item_id}
-                      onChange={(event) => updateItemRow(index, 'source_item_id', event.target.value)}
-                    >
+                    <select className="form-select min-w-56" value={row.source_item_id} onChange={(event) => updateItemRow(index, 'source_item_id', event.target.value)}>
                       {itemSourceOptions.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
@@ -396,7 +422,7 @@ export default function InwardInspectionFormPage() {
                 <th className="px-3 py-3 text-left">Item</th>
                 <th className="px-3 py-3 text-left">Accepted Qty</th>
                 <th className="px-3 py-3 text-left">Testing</th>
-                <th className="px-3 py-3 text-left">Location</th>
+                <th className="px-3 py-3 text-left">Store / Location</th>
                 <th className="px-3 py-3 text-left">Batch Number</th>
               </tr>
             </thead>
@@ -415,7 +441,12 @@ export default function InwardInspectionFormPage() {
                     <input className="form-input min-w-32" value={row.testing} onChange={(event) => updateItemRow(index, 'testing', event.target.value)} />
                   </td>
                   <td className="px-3 py-3">
-                    <input className="form-input min-w-28" value={row.location} onChange={(event) => updateItemRow(index, 'location', event.target.value)} />
+                    <select className="form-select min-w-36" value={row.location} onChange={(event) => updateItemRow(index, 'location', event.target.value)}>
+                      <option value="">Select rack / store</option>
+                      {rackOptions.map((rack) => (
+                        <option key={rack.key} value={rack.value}>{rack.label}</option>
+                      ))}
+                    </select>
                   </td>
                   <td className="px-3 py-3">
                     <input className="form-input min-w-28" value={row.batch_number} onChange={(event) => updateItemRow(index, 'batch_number', event.target.value)} />
@@ -436,6 +467,7 @@ export default function InwardInspectionFormPage() {
                 <th className="px-3 py-3 text-left">Item</th>
                 <th className="px-3 py-3 text-left">Rejected Qty</th>
                 <th className="px-3 py-3 text-left">Rework Qty</th>
+                <th className="px-3 py-3 text-left">Store / Location</th>
                 <th className="px-3 py-3 text-left">Rejection Reason</th>
                 <th className="px-3 py-3 text-left">Attachment</th>
               </tr>
@@ -453,6 +485,14 @@ export default function InwardInspectionFormPage() {
                   </td>
                   <td className="px-3 py-3">
                     <input className="form-input min-w-24" type="number" min="0" step="0.01" value={row.rework_qty} onChange={(event) => updateItemRow(index, 'rework_qty', event.target.value)} />
+                  </td>
+                  <td className="px-3 py-3">
+                    <select className="form-select min-w-36" value={row.location} onChange={(event) => updateItemRow(index, 'location', event.target.value)}>
+                      <option value="">Select rack / store</option>
+                      {rackOptions.map((rack) => (
+                        <option key={rack.key} value={rack.value}>{rack.label}</option>
+                      ))}
+                    </select>
                   </td>
                   <td className="px-3 py-3">
                     <input className="form-input min-w-40" value={row.rejection_reason} onChange={(event) => updateItemRow(index, 'rejection_reason', event.target.value)} placeholder="Enter rejection reason" />

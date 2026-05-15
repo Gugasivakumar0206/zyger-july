@@ -130,6 +130,28 @@ export function createInwardInspection(payload) {
   })
 }
 
+export function getRacks() {
+  return request('/maintenance/racks')
+}
+
+export function createRack(payload) {
+  return request('/maintenance/racks', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function getBins() {
+  return request('/maintenance/bins')
+}
+
+export function createBin(payload) {
+  return request('/maintenance/bins', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
 export function getDashboardSummary() {
   return request('/dashboard/summary')
 }

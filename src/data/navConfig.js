@@ -39,7 +39,6 @@ export const NAV_MENU = [
         icon: Beaker,
         children: [
           { label: 'Item Group', path: '/quality/item-group' },
-          { label: 'Inward Inspection', path: '/quality/inward-inspection' },
         ],
       },
       {
@@ -68,6 +67,16 @@ export const NAV_MENU = [
       { label: 'Company Info', icon: Building2, path: '/company-info' },
     ],
   },
+
+  {
+    label: 'Quality',
+    icon: Beaker,
+    children: [
+      { label: 'Inward Inspection', path: '/quality/inward-inspection' },
+    ],
+  },
+
+  { label: 'Stock', icon: Package, path: '/reports/inventory' },
 
   {
     label: 'Sales',
@@ -121,6 +130,7 @@ export const NAV_MENU = [
     label: 'Reports',
     icon: BarChart3,
     children: [
+      { label: 'Stock Report', icon: Package, path: '/reports/inventory' },
       { label: 'Rejection Report', icon: AlertTriangle, path: '/rejection' },
       { label: 'Reports', icon: BarChart3, path: '/reports' },
     ],
