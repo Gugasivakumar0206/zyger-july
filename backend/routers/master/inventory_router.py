@@ -26,6 +26,7 @@ class ItemPayload(BaseModel):
     purchaseRate: Optional[str] = None
     sellingRate: Optional[str] = None
     gstPercent: Optional[str] = None
+    inspectionRequired: Optional[bool] = False
     status: Optional[str] = "Active"
     engineeringDocumentName: Optional[str] = None
     engineeringDocumentData: Optional[str] = None
@@ -62,6 +63,12 @@ def _ensure_item_type_column(cursor):
         """
         ALTER TABLE items
         ADD COLUMN IF NOT EXISTS form_data JSONB
+        """
+    )
+    cursor.execute(
+        """
+        ALTER TABLE items
+        ADD COLUMN IF NOT EXISTS inspection_required BOOLEAN DEFAULT FALSE
         """
     )
 
@@ -131,6 +138,7 @@ def list_items(item_type: Optional[str] = None):
                 purchase_rate,
                 sales_rate,
                 gst_percent,
+                inspection_required,
                 engineering_document_name,
                 form_data,
                 status,
@@ -183,12 +191,12 @@ def create_item(payload: ItemPayload):
             INSERT INTO items (
                 item_type, item_code, item_name, print_name, item_group, uom, hsn_code,
                 rack, bin, min_stock, max_stock, reorder_level,
-                purchase_rate, sales_rate, gst_percent, engineering_document_name, engineering_document_data, status
+                purchase_rate, sales_rate, gst_percent, inspection_required, engineering_document_name, engineering_document_data, status
             )
             VALUES (
                 %s,%s,%s,%s,%s,%s,%s,
                 %s,%s,%s,%s,%s,
-                %s,%s,%s,%s,%s,%s
+                %s,%s,%s,%s,%s,%s,%s
             )
             RETURNING id, item_type, item_code, item_name
             """,
@@ -208,6 +216,7 @@ def create_item(payload: ItemPayload):
                 data["purchaseRate"] or None,
                 data["sellingRate"] or None,
                 data["gstPercent"] or None,
+                data["inspectionRequired"],
                 data["engineeringDocumentName"],
                 data["engineeringDocumentData"],
                 data["status"],
@@ -263,6 +272,7 @@ def update_item(item_id: int, payload: ItemPayload):
                 purchase_rate = %s,
                 sales_rate = %s,
                 gst_percent = %s,
+                inspection_required = %s,
                 engineering_document_name = %s,
                 engineering_document_data = %s,
                 form_data = %s,
@@ -286,6 +296,7 @@ def update_item(item_id: int, payload: ItemPayload):
                 data["purchaseRate"] or None,
                 data["sellingRate"] or None,
                 data["gstPercent"] or None,
+                data["inspectionRequired"],
                 data["engineeringDocumentName"],
                 data["engineeringDocumentData"],
                 Json(data.get("formData") or data),

@@ -36,6 +36,7 @@ class InwardInspectionPayload(BaseModel):
 
 class ItemGroupPayload(BaseModel):
     groupName: str
+    groupType: Optional[str] = "Purchase Item"
     description: Optional[str] = None
     inspectionRequired: bool = False
     isActive: bool = True
@@ -58,11 +59,30 @@ def _ensure_quality_tables(cursor):
         CREATE TABLE IF NOT EXISTS item_groups (
             id BIGSERIAL PRIMARY KEY,
             group_name VARCHAR(150) NOT NULL UNIQUE,
+            group_type VARCHAR(80) DEFAULT 'Purchase Item',
             description TEXT,
             inspection_required BOOLEAN DEFAULT FALSE,
             is_active BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
+        """
+    )
+    cursor.execute(
+        """
+        ALTER TABLE item_groups
+        ADD COLUMN IF NOT EXISTS group_type VARCHAR(80) DEFAULT 'Purchase Item'
+        """
+    )
+    cursor.execute(
+        """
+        ALTER TABLE item_groups
+        DROP CONSTRAINT IF EXISTS item_groups_group_name_key
+        """
+    )
+    cursor.execute(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_item_groups_type_name
+        ON item_groups (group_type, group_name)
         """
     )
     cursor.execute(
@@ -221,9 +241,9 @@ def list_item_groups():
         connection.commit()
         cursor.execute(
             """
-            SELECT id, group_name, description, inspection_required, is_active, created_at
+            SELECT id, group_name, group_type, description, inspection_required, is_active, created_at
             FROM item_groups
-            ORDER BY id DESC
+            ORDER BY group_type ASC, group_name ASC
             """
         )
         return cursor.fetchall()
@@ -244,12 +264,13 @@ def create_item_group(payload: ItemGroupPayload):
         _ensure_quality_tables(cursor)
         cursor.execute(
             """
-            INSERT INTO item_groups (group_name, description, inspection_required, is_active)
-            VALUES (%s, %s, %s, %s)
-            RETURNING id, group_name, description, inspection_required, is_active, created_at
+            INSERT INTO item_groups (group_name, group_type, description, inspection_required, is_active)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id, group_name, group_type, description, inspection_required, is_active, created_at
             """,
             (
                 data["groupName"],
+                data["groupType"] or "Purchase Item",
                 data["description"],
                 data["inspectionRequired"],
                 data["isActive"],

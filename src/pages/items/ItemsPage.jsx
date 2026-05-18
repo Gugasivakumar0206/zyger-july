@@ -6,6 +6,7 @@ import { deleteItem, getItems } from '../../lib/api'
 const COLUMNS = [
   { key: 'itemCode', label: 'Item Code', width: 120 },
   { key: 'itemName', label: 'Item Name' },
+  { key: 'printName', label: 'Print Name', width: 180 },
   { key: 'itemGroup', label: 'Item Group', width: 140 },
   { key: 'stockUOM', label: 'UOM', width: 80 },
   { key: 'location', label: 'Location', width: 100 },

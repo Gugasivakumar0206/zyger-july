@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { createItem, deleteItem, getItemById, getNextItemNumber, updateItem } from '../../lib/api'
+import { createItem, deleteItem, getItemById, getItemGroups, getNextItemNumber, updateItem } from '../../lib/api'
 import {
   SectionCard, FormGrid, FormInput, NumberInput, SelectDropdown,
   Textarea, Checkbox, DatePicker, ImageUploader,
@@ -129,10 +129,54 @@ export default function ItemMasterForm({
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [saveSuccess, setSaveSuccess] = useState('')
+  const [itemGroups, setItemGroups] = useState([])
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }))
   const bind = (key) => ({ value: form[key] ?? '', onChange: e => set(key, e.target.value) })
   const bindCheck = (key) => ({ checked: !!form[key], onChange: v => set(key, v) })
   const show = (n) => showSections === 'all' || showSections.includes(n)
+  const selectedGroupType = form.groupType || form.itemType || 'Purchase Item'
+  const filteredItemGroups = itemGroups.filter((group) => {
+    const groupType = group.group_type || 'Purchase Item'
+    return groupType === selectedGroupType
+  })
+
+  useEffect(() => {
+    async function loadItemGroups() {
+      try {
+        const result = await getItemGroups()
+        setItemGroups((result || []).filter((group) => group.is_active !== false))
+      } catch {
+        setItemGroups([])
+      }
+    }
+
+    loadItemGroups()
+  }, [])
+
+  useEffect(() => {
+    if (!form.itemGroup || !itemGroups.length) return
+    const matched = itemGroups.find((group) => (
+      group.group_name === form.itemGroup &&
+      (group.group_type || 'Purchase Item') === selectedGroupType
+    ))
+    if (!matched) return
+    setForm((current) => (
+      current.inspectionRequired === matched.inspection_required
+        ? current
+        : { ...current, inspectionRequired: matched.inspection_required }
+    ))
+  }, [form.itemGroup, itemGroups, selectedGroupType])
+
+  useEffect(() => {
+    if (!form.itemGroup || !itemGroups.length) return
+    const existsForType = itemGroups.some((group) => (
+      group.group_name === form.itemGroup &&
+      (group.group_type || 'Purchase Item') === selectedGroupType
+    ))
+    if (!existsForType) {
+      setForm((current) => ({ ...current, itemGroup: '', inspectionRequired: false }))
+    }
+  }, [form.itemGroup, itemGroups, selectedGroupType])
 
   useEffect(() => {
     if (initialData.id || form.itemCode) return
@@ -159,6 +203,7 @@ export default function ItemMasterForm({
           ...(item.form_data || {}),
           id: item.id,
           itemType: item.item_type,
+          groupType: item.item_type,
           itemCode: item.item_code,
           itemName: item.item_name,
           printName: item.print_name || '',
@@ -175,6 +220,7 @@ export default function ItemMasterForm({
           gstPercent: item.gst_percent || '',
           engineeringDocumentName: item.engineering_document_name || '',
           engineeringDocumentData: item.engineering_document_data || '',
+          inspectionRequired: item.inspection_required || item.form_data?.inspectionRequired || false,
           status: item.status || 'Active',
         })
       } catch (error) {
@@ -233,6 +279,7 @@ export default function ItemMasterForm({
         purchaseRate: form.purchaseRate,
         sellingRate: form.sellingRate,
         gstPercent: form.saleOutputIGST || form.purchaseInputIGST || form.gstPercent,
+        inspectionRequired: !!form.inspectionRequired,
         engineeringDocumentName: form.engineeringDocumentName,
         engineeringDocumentData: form.engineeringDocumentData,
         formData: form,
@@ -352,7 +399,7 @@ export default function ItemMasterForm({
               {...bind('groupType')} />
             <FormInput label="Item Code" required {...bind('itemCode')} placeholder="ITM-0001" />
             <SelectDropdown label="Item Group"
-              options={['Mechanical', 'Electrical', 'Electronic', 'Structural', 'Raw Material', 'Finished Good']}
+              options={filteredItemGroups.map((group) => group.group_name)}
               {...bind('itemGroup')} />
             <FormInput label="Item Name" required {...bind('itemName')} placeholder="Enter item name" />
             <FormInput label="Print Name" {...bind('printName')} />
@@ -370,6 +417,7 @@ export default function ItemMasterForm({
             <Checkbox label="Stock Maintain" {...bindCheck('stockMaintain')} />
             <Checkbox label="BOM Maintain" {...bindCheck('bomMaintain')} />
             <Checkbox label="Billing Item" {...bindCheck('billingItem')} />
+            <Checkbox label="Inspection Required" {...bindCheck('inspectionRequired')} />
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Storage</span>
               <SelectDropdown placeholder="Bin / Box / Tray / Trolley"
