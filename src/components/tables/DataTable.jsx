@@ -68,7 +68,7 @@ export default function DataTable({
           {extraActions}
           {(onAdd || addPath) && (
             addPath ? (
-              <Link to={addPath} className="btn-primary">
+              <Link to={addPath} target="_blank" rel="noreferrer" className="btn-primary">
                 <Plus size={14} /> {addLabel}
               </Link>
             ) : (
@@ -123,7 +123,7 @@ export default function DataTable({
                 <td className="table-td">
                   <div className="flex items-center gap-1 justify-center">
                     {rowPath && (
-                      <Link to={`${rowPath}/${row.id}`} className="p-1.5 rounded-md hover:bg-primary-50 text-slate-400 hover:text-primary-600 transition-colors">
+                      <Link to={`${rowPath}/${row.id}`} target="_blank" rel="noreferrer" className="p-1.5 rounded-md hover:bg-primary-50 text-slate-400 hover:text-primary-600 transition-colors">
                         <Edit2 size={13} />
                       </Link>
                     )}
@@ -137,8 +137,8 @@ export default function DataTable({
                           <Link
                             key={action.key}
                             to={typeof action.to === 'function' ? action.to(row) : action.to}
-                            target={action.target}
-                            rel={action.target === '_blank' ? 'noreferrer' : undefined}
+                            target={action.target || '_blank'}
+                            rel="noreferrer"
                             className={classes}
                             title={action.label}
                           >

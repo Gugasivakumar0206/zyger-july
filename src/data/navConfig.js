@@ -25,14 +25,6 @@ export const NAV_MENU = [
             ],
           },
           { label: 'Stock Details', path: '/reports/inventory' },
-          {
-            label: 'Quality',
-            icon: Beaker,
-            children: [
-              { label: 'Item Group', path: '/quality/item-group' },
-              { label: 'Inward Inspection', path: '/quality/inward-inspection' },
-            ],
-          },
         ],
       },
       {
@@ -70,6 +62,17 @@ export const NAV_MENU = [
   },
 
   {
+    label: 'Quality',
+    icon: Beaker,
+    children: [
+      { label: 'Item Group', path: '/quality/item-group' },
+      { label: 'Inward Inspection', path: '/quality/inward-inspection' },
+    ],
+  },
+
+  { label: 'Stock', icon: Package, path: '/reports/inventory' },
+
+  {
     label: 'Sales',
     icon: TrendingUp,
     children: [
@@ -100,14 +103,6 @@ export const NAV_MENU = [
           { label: 'JO Inward', path: '/inventory/inward/jo' },
         ],
       },
-      {
-        label: 'Return',
-        path: '/inventory/return',
-        children: [
-          { label: 'PO DC Return', path: '/inventory/return/po-dc' },
-          { label: 'PO Invoice Return', path: '/inventory/return/po-invoice' },
-        ],
-      },
     ],
   },
 
@@ -134,6 +129,7 @@ export const NAV_MENU = [
       { label: 'Reports', icon: BarChart3, path: '/reports' },
     ],
   },
+  { label: 'Stock Report', icon: Package, path: '/reports/inventory' },
 
   { label: 'Settings', icon: Settings, path: '/settings' },
 ]

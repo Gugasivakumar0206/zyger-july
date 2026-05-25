@@ -271,6 +271,7 @@ export default function BusinessReportPage({ reportKey }) {
   }
 
   function downloadPdf() {
+    const generatedAt = new Date().toLocaleString('en-IN')
     const tableRows = rows.map((row) => `
       <tr>
         ${meta.columns.map(([key]) => `<td>${escapeHtml(formatValue(key, row[key]))}</td>`).join('')}
@@ -288,21 +289,63 @@ export default function BusinessReportPage({ reportKey }) {
         <head>
           <title>${escapeHtml(meta.title)}</title>
           <style>
-            body { font-family: Arial, sans-serif; padding: 24px; color: #1f2937; }
-            h1 { margin-bottom: 8px; }
-            table { border-collapse: collapse; width: 100%; }
-            th, td { border: 1px solid #d1d5db; padding: 8px; font-size: 12px; }
-            th { background: #f8fafc; text-align: left; }
+            * { box-sizing: border-box; }
+            body { margin: 0; padding: 30px; background: #eef4ff; color: #172033; font-family: Inter, Arial, sans-serif; }
+            .sheet { background: #fff; border-radius: 18px; padding: 28px; box-shadow: 0 18px 50px rgba(15, 76, 129, 0.16); border: 1px solid #dbeafe; }
+            .header { display: flex; justify-content: space-between; gap: 20px; border-bottom: 3px solid #0b6fb7; padding-bottom: 18px; margin-bottom: 18px; }
+            .brand { font-size: 13px; font-weight: 800; color: #0b6fb7; letter-spacing: 0.14em; text-transform: uppercase; }
+            h1 { margin: 6px 0 8px; font-size: 30px; color: #0f2f57; letter-spacing: -0.03em; }
+            .subtitle { margin: 0; color: #52637a; font-size: 13px; max-width: 720px; }
+            .meta { text-align: right; color: #52637a; font-size: 12px; line-height: 1.7; }
+            .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 18px 0; }
+            .summary-card { background: linear-gradient(135deg, #eff6ff, #f8fbff); border: 1px solid #bfdbfe; border-radius: 14px; padding: 12px; }
+            .summary-card span { display: block; font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; }
+            .summary-card strong { display: block; margin-top: 4px; font-size: 18px; color: #0f2f57; }
+            table { border-collapse: separate; border-spacing: 0; width: 100%; overflow: hidden; border: 1px solid #dbe3ef; border-radius: 14px; }
+            th, td { border-bottom: 1px solid #e5edf7; padding: 9px 10px; font-size: 11px; vertical-align: top; }
+            th { background: #075a9f; color: white; text-align: left; font-weight: 800; }
+            tr:nth-child(even) td { background: #f8fbff; }
+            tr:last-child td { border-bottom: 0; }
+            .footer { margin-top: 20px; display: flex; justify-content: space-between; color: #64748b; font-size: 11px; }
+            @media print {
+              body { background: white; padding: 0; }
+              .sheet { box-shadow: none; border: 0; border-radius: 0; }
+            }
           </style>
         </head>
         <body>
-          <h1>${escapeHtml(meta.title)}</h1>
-          <table>
-            <thead>
-              <tr>${meta.columns.map(([, label]) => `<th>${escapeHtml(label)}</th>`).join('')}</tr>
-            </thead>
-            <tbody>${tableRows}</tbody>
-          </table>
+          <div class="sheet">
+            <div class="header">
+              <div>
+                <div class="brand">Zyger ERP Demo</div>
+                <h1>${escapeHtml(meta.title)}</h1>
+                <p class="subtitle">${escapeHtml(meta.subtitle)}</p>
+              </div>
+              <div class="meta">
+                <div><strong>Generated</strong></div>
+                <div>${escapeHtml(generatedAt)}</div>
+                <div>Records: ${rows.length}</div>
+              </div>
+            </div>
+            <div class="summary">
+              ${summaryEntries.slice(0, 3).map(([key, value]) => `
+                <div class="summary-card">
+                  <span>${escapeHtml(key.replaceAll('_', ' '))}</span>
+                  <strong>${escapeHtml(formatValue(key, value))}</strong>
+                </div>
+              `).join('')}
+            </div>
+            <table>
+              <thead>
+                <tr>${meta.columns.map(([, label]) => `<th>${escapeHtml(label)}</th>`).join('')}</tr>
+              </thead>
+              <tbody>${tableRows}</tbody>
+            </table>
+            <div class="footer">
+              <span>Prepared by ERP System</span>
+              <span>Checked / Approved By ____________________</span>
+            </div>
+          </div>
         </body>
       </html>
     `)
@@ -317,6 +360,7 @@ export default function BusinessReportPage({ reportKey }) {
     <PageContainer
       title={meta.title}
       subtitle={meta.subtitle}
+      showBackButton
       actions={(
         <>
           <button type="button" className="btn-secondary" onClick={downloadExcel}>

@@ -1,5 +1,5 @@
-import { useNavigate } from 'react-router-dom'
 import { BarChart2, Factory, FileText, Package, ShoppingCart, TrendingUp } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 import { PageContainer } from '../../components/ui/index'
 
@@ -19,25 +19,23 @@ const REPORTS = [
 ]
 
 export default function ReportsPage() {
-  const navigate = useNavigate()
-
   return (
-    <PageContainer title="Reports" subtitle="Business intelligence and reporting">
+    <PageContainer title="Reports" subtitle="Business intelligence and reporting" showBackButton>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {REPORTS.map((report) => (
-          <button
+          <Link
             key={report.label}
             className="card text-left hover:shadow-card-hover transition-shadow duration-200 group"
-            onClick={() => {
-              navigate(report.path)
-            }}
+            to={report.path}
+            target="_blank"
+            rel="noreferrer"
           >
             <div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center mb-3 group-hover:bg-primary-100 transition-colors">
               <report.icon size={20} className="text-primary-600" />
             </div>
             <p className="text-sm font-semibold text-slate-700 mb-1 font-display">{report.label}</p>
             <p className="text-xs text-slate-500">{report.description}</p>
-          </button>
+          </Link>
         ))}
       </div>
     </PageContainer>

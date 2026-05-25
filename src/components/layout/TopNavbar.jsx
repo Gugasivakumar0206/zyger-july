@@ -7,6 +7,7 @@ import logo from '../../assets/ar-precision-logo.svg'
 import { clearAuth, getCompanyInfo, getStoredUser } from '../../lib/api'
 
 const COMPANY_BRAND_CACHE_KEY = 'erp_company_brand'
+const NEW_TAB_PROPS = { target: '_blank', rel: 'noreferrer' }
 
 /* ── Color tokens ────────────────────────────────────────────────────────── */
 const C = {
@@ -55,7 +56,7 @@ function MenuItem({ item, onCloseAll, depth = 0 }) {
   if (!hasSub) {
     const leafActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/')
     return (
-      <Link to={item.path} onClick={onCloseAll} style={{
+      <Link to={item.path} onClick={onCloseAll} {...NEW_TAB_PROPS} style={{
         ...base,
         color: leafActive ? '#fff' : '#3d2b40',
         background: leafActive ? C.active : 'transparent',
@@ -103,7 +104,7 @@ function MenuItem({ item, onCloseAll, depth = 0 }) {
           </div>
           <div style={{ padding: '6px' }}>
             {item.path && (
-              <Link to={item.path} onClick={onCloseAll} style={{
+              <Link to={item.path} onClick={onCloseAll} {...NEW_TAB_PROPS} style={{
                 display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px',
                 borderRadius: '8px', marginBottom: '4px', fontSize: '12px', fontWeight: '700',
                 color: C.hoverText, background: C.hover, textDecoration: 'none',
@@ -328,7 +329,7 @@ function MobileItem({ item, depth = 0, onClose }) {
 
   if (!hasSub) {
     return (
-      <Link to={item.path} onClick={onClose} style={{
+      <Link to={item.path} onClick={onClose} {...NEW_TAB_PROPS} style={{
         display: 'flex', alignItems: 'center', gap: '10px',
         padding: `9px ${indent}px`, borderRadius: '10px', marginBottom: '2px',
         fontSize: '13px', fontWeight: '600', textDecoration: 'none',
@@ -469,7 +470,7 @@ export default function TopNavbar() {
       <header className="erp-header">
         <div className="erp-topbar">
           <div className="erp-topbar-inner">
-            <Link to="/dashboard" className="erp-logo">
+            <Link to="/dashboard" className="erp-logo" {...NEW_TAB_PROPS}>
               <div className="erp-logo-icon">
                 <img
                   src={companyBrand.logo || logo}
@@ -508,7 +509,7 @@ export default function TopNavbar() {
               }
               const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/')
               return (
-                <Link key={item.label} to={item.path} onClick={closeAll} style={{
+                <Link key={item.label} to={item.path} onClick={closeAll} {...NEW_TAB_PROPS} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                   padding: '0 13px', height: '34px', fontSize: '12px', fontWeight: '700',
                   textDecoration: 'none', color: isActive ? '#fff' : C.menuText,

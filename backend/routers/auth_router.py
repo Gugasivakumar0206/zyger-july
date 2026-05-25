@@ -13,6 +13,8 @@ router = APIRouter()
 
 SECRET_KEY = os.getenv("AUTH_SECRET_KEY", "change_me_to_a_long_random_secret")
 ALGORITHM = "HS256"
+
+
 class RegisterPayload(BaseModel):
     full_name: str
     phone_number: str
@@ -170,9 +172,6 @@ def register_user(payload: RegisterPayload):
         _backfill_company_users(cursor, company["id"])
 
         company_user_count = _get_company_user_count(cursor, company["id"])
-        if company_user_count >= 2:
-            raise HTTPException(status_code=400, detail="Demo user limit reached")
-
         is_company_head = company_user_count == 0
         role = "company_head" if is_company_head else "user"
         password_hash = bcrypt.hashpw(payload.password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
@@ -308,7 +307,8 @@ def list_company_users(authorization: str | None = Header(default=None)):
         users = cursor.fetchall()
         return {
             "users": users,
-            "limit": 2,
+            "limit": None,
+            "limit_label": "Unlimited",
             "count": len(users),
         }
     except HTTPException:
@@ -344,10 +344,6 @@ def create_company_user(payload: RegisterPayload, authorization: str | None = He
             raise HTTPException(status_code=404, detail="User not found")
         if not current_user["is_company_head"] and (current_user["role"] or "").lower() != "admin":
             raise HTTPException(status_code=403, detail="Only company head can create users")
-
-        company_user_count = _get_company_user_count(cursor, current_user["company_id"])
-        if company_user_count >= 2:
-            raise HTTPException(status_code=400, detail="Company user limit reached")
 
         password_hash = bcrypt.hashpw(payload.password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
         cursor.execute(
