@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
-import logo from '../../assets/ar-precision-logo.svg'
+import logo from '../../assets/zyger-logo.svg'
 import { MOCK_DC } from '../../data/mockData'
 import { COMPANY_PROFILE } from '../print/companyProfile'
 

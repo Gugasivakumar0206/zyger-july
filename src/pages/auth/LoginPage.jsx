@@ -131,13 +131,13 @@ export default function LoginPage({ onAuthenticated }) {
       <div className="auth-root">
         <section className="auth-hero">
           <div className="auth-copy">
-            <div className="auth-badge">Zyger ERP Demo</div>
+            <div className="auth-badge">Zyger ERP</div>
             <h1 className="auth-title">Explore your <span>factory workflow</span> with a live demo experience.</h1>
             <p className="auth-desc">
               Use signup to create a demo account, explore the ERP screens, and understand the full manufacturing workflow.
             </p>
             <div className="auth-points">
-              <div className="auth-point"><span className="auth-dot" />Demo branding only, no AR Precision login hints</div>
+              <div className="auth-point"><span className="auth-dot" />Clean Zyger ERP branding for every login user</div>
               <div className="auth-point"><span className="auth-dot" />Signup and login enabled from the same screen</div>
               <div className="auth-point"><span className="auth-dot" />Company details will reflect from your own Company Info data</div>
             </div>
@@ -159,14 +159,14 @@ export default function LoginPage({ onAuthenticated }) {
             <p className="auth-sub">
               {activeTab === 'login'
                 ? 'Login with your demo account to continue exploring Zyger ERP.'
-                : 'Signup to create your own demo account without showing AR Precision details.'}
+                : 'Signup to create your own Zyger ERP account.'}
             </p>
 
             {error && <div className="auth-error">{error}</div>}
             {success && <div className="auth-success">{success}</div>}
 
             <div className="auth-note">
-              <div><strong>Demo Brand:</strong> Zyger ERP Demo</div>
+              <div><strong>Brand:</strong> Zyger ERP</div>
               <div><strong>Demo Flow:</strong> Create your account and explore the app</div>
               <div><strong>Data Shown:</strong> Your own demo company info only</div>
             </div>

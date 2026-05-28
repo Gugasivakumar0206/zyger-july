@@ -168,7 +168,7 @@ export default function InventoryReportPage() {
           <div class="sheet">
             <div class="header">
               <div>
-                <div class="brand">Zyger ERP Demo</div>
+                <div class="brand">Zyger ERP</div>
                 <h1>Inventory Report</h1>
                 <p class="subtitle">Current stock levels, purchase values, and item-wise inventory summary</p>
               </div>
@@ -219,6 +219,7 @@ export default function InventoryReportPage() {
       title="Inventory Report"
       subtitle="Current stock levels, purchase values, and item-wise inventory summary"
       showBackButton
+      backPath="/reports"
       actions={(
         <>
           <button type="button" className="btn-secondary" onClick={downloadExcel}>

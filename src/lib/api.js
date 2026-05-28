@@ -277,6 +277,43 @@ export function getBusinessReportCsvUrl(reportKey) {
   return `${API_BASE_URL}/reports/${reportKey}/csv`
 }
 
+export function getCrmSummary() {
+  return request('/crm/summary')
+}
+
+export function getCrmRecords(entity, query = '') {
+  const suffix = query ? `?q=${encodeURIComponent(query)}` : ''
+  return request(`/crm/${entity}${suffix}`)
+}
+
+export function getCrmRecordById(entity, id) {
+  return request(`/crm/${entity}/${id}`)
+}
+
+export function getNextCrmNumber(entity) {
+  return request(`/crm/${entity}/next-number`)
+}
+
+export function createCrmRecord(entity, payload) {
+  return request(`/crm/${entity}`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function updateCrmRecord(entity, id, payload) {
+  return request(`/crm/${entity}/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function deleteCrmRecord(entity, id) {
+  return request(`/crm/${entity}/${id}`, {
+    method: 'DELETE',
+  })
+}
+
 export function getSalesDCs() {
   return request('/sales-dc/')
 }

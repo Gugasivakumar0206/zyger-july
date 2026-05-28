@@ -106,7 +106,7 @@ export default function DashboardPage() {
   return (
     <PageContainer
       title="Dashboard"
-      subtitle="Manufacturing ERP Overview"
+      subtitle="Zyger ERP Overview"
     >
       {error && (
         <div style={{ marginBottom: '16px', padding: '12px 14px', borderRadius: '10px', background: '#fee2e2', color: '#991b1b', fontSize: '13px', fontWeight: '700' }}>

@@ -317,7 +317,7 @@ export default function BusinessReportPage({ reportKey }) {
           <div class="sheet">
             <div class="header">
               <div>
-                <div class="brand">Zyger ERP Demo</div>
+                <div class="brand">Zyger ERP</div>
                 <h1>${escapeHtml(meta.title)}</h1>
                 <p class="subtitle">${escapeHtml(meta.subtitle)}</p>
               </div>
@@ -361,6 +361,7 @@ export default function BusinessReportPage({ reportKey }) {
       title={meta.title}
       subtitle={meta.subtitle}
       showBackButton
+      backPath="/reports"
       actions={(
         <>
           <button type="button" className="btn-secondary" onClick={downloadExcel}>

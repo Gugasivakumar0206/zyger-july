@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { NAV_MENU } from '../../data/navConfig'
 import { Search, Bell, ChevronDown, ChevronRight, Menu, X, User, LogOut, Settings } from 'lucide-react'
-import logo from '../../assets/ar-precision-logo.svg'
+import logo from '../../assets/zyger-logo.svg'
 
 import { clearAuth, getCompanyInfo, getStoredUser } from '../../lib/api'
 
@@ -381,9 +381,9 @@ export default function TopNavbar() {
   const [openMenu, setOpenMenu] = useState(null)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [companyBrand, setCompanyBrand] = useState({
-    logo: cachedBrand?.logo || logo,
-    name: cachedBrand?.name || 'Zyger ERP Demo',
-    subtitle: 'Demo Version',
+    logo,
+    name: 'Zyger ERP',
+    subtitle: 'ERP Suite',
   })
   const location = useLocation()
 
@@ -399,9 +399,9 @@ export default function TopNavbar() {
         if (!company) return
 
         const nextBrand = {
-          logo: company.company_logo || logo,
-          name: company.print_name || company.company_name || 'Zyger ERP Demo',
-          subtitle: 'Demo Version',
+          logo,
+          name: 'Zyger ERP',
+          subtitle: company?.company_name ? 'ERP Suite' : 'ERP Suite',
         }
 
         setCompanyBrand(nextBrand)
@@ -420,9 +420,9 @@ export default function TopNavbar() {
         if (!raw) return
         const parsed = JSON.parse(raw)
         setCompanyBrand({
-          logo: parsed.logo || logo,
-          name: parsed.name || 'Zyger ERP Demo',
-          subtitle: parsed.subtitle || 'Demo Version',
+          logo,
+          name: 'Zyger ERP',
+          subtitle: parsed.subtitle || 'ERP Suite',
         })
       } catch {
       }

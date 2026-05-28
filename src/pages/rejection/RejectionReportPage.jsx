@@ -15,7 +15,7 @@ const COLUMNS = [
 export default function RejectionReportPage() {
   const [data, setData] = useState(MOCK_REJECTIONS)
   return (
-    <PageContainer title="Rejection Report" subtitle="Manage rejection report records">
+    <PageContainer title="Rejection Report" subtitle="Manage rejection report records" showBackButton backPath="/reports">
       <DataTable
         columns={COLUMNS}
         data={data}

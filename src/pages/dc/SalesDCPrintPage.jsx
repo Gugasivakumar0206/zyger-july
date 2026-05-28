@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import logo from '../../assets/ar-precision-logo.svg'
+import logo from '../../assets/zyger-logo.svg'
 import { getSalesDCById } from '../../lib/api'
 
 const COMPANY = {
-  name: 'AR Precision',
-  address: '96/4, Muneshwara Nagar, Kammasandra Road, Hebbagodi, Post, Hebbagodi, Bengaluru, Karnataka 560100',
+  name: 'Zyger ERP',
+  address: 'ERP Business Suite',
 }
 
 function formatDate(value) {
@@ -81,7 +81,7 @@ export default function SalesDCPrintPage() {
         <div style={{ padding: '18px 22px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '88px 1fr', gap: '14px', alignItems: 'center', borderBottom: '2px solid #94d2e8', paddingBottom: '12px' }}>
             <div style={{ width: '76px', height: '76px', border: '1px solid #d1d5db', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img src={logo} alt="AR Precision" style={{ width: '62px', height: '62px', objectFit: 'contain' }} />
+              <img src={logo} alt="Zyger ERP" style={{ width: '62px', height: '62px', objectFit: 'contain' }} />
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '0.02em' }}>{COMPANY.name}</div>

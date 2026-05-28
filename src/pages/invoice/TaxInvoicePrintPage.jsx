@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import logo from '../../assets/ar-precision-logo.svg'
+import logo from '../../assets/zyger-logo.svg'
 import { getCompanyInfo, getTaxInvoiceById } from '../../lib/api'
 
 function formatDate(value) {
@@ -88,10 +88,10 @@ export default function TaxInvoicePrintPage() {
           <div style={{ border: '1px solid #4b5563' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '88px 1fr', gap: '14px', alignItems: 'center', padding: '14px', borderBottom: '1px solid #4b5563' }}>
               <div style={{ width: '76px', height: '76px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <img src={companyInfo?.company_logo || logo} alt={companyInfo?.print_name || companyInfo?.company_name || 'Zyger ERP Demo'} style={{ width: '68px', height: '68px', objectFit: 'contain' }} />
+                <img src={companyInfo?.company_logo || logo} alt={companyInfo?.print_name || companyInfo?.company_name || 'Zyger ERP'} style={{ width: '68px', height: '68px', objectFit: 'contain' }} />
               </div>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '28px', fontWeight: 800 }}>{companyInfo?.print_name || companyInfo?.company_name || 'Zyger ERP Demo'}</div>
+                <div style={{ fontSize: '28px', fontWeight: 800 }}>{companyInfo?.print_name || companyInfo?.company_name || 'Zyger ERP'}</div>
                 <div style={{ fontSize: '13px', marginTop: '4px' }}>{companyDisplayAddress}</div>
                 <div style={{ fontSize: '13px', marginTop: '6px', fontWeight: 700 }}>
                   PAN No: {companyInfo?.pan_it_no || '-'} , GSTIN: {companyInfo?.gstin || '-'}
@@ -195,7 +195,7 @@ export default function TaxInvoicePrintPage() {
                   <div>1) Goods once sold will not be taken back or exchanged.</div>
                   <div>2) Our responsibility ceases once the goods leave our premises.</div>
                   <div>3) Interest may be payable if invoice is not paid within due days.</div>
-                  <div>4) Payments are to be made by cheque/draft in favour of {companyInfo?.print_name || companyInfo?.company_name || 'Zyger ERP Demo'}.</div>
+                  <div>4) Payments are to be made by cheque/draft in favour of {companyInfo?.print_name || companyInfo?.company_name || 'Zyger ERP'}.</div>
                 </div>
                 <div style={{ marginTop: '40px', textAlign: 'center', fontWeight: 700 }}>Authorised Signatory</div>
               </div>

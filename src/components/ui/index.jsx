@@ -190,10 +190,17 @@ export function SectionCard({ title, icon: Icon, children, defaultOpen = true })
   )
 }
 
-export function PageContainer({ title, subtitle, actions, children, showBackButton }) {
+export function PageContainer({ title, subtitle, actions, children, showBackButton, backPath }) {
   const location = useLocation()
   const navigate = useNavigate()
   const autoShowBack = showBackButton ?? (location.pathname.includes('/new') || /\/\d+$/.test(location.pathname))
+  const handleBack = () => {
+    if (backPath) {
+      navigate(backPath)
+      return
+    }
+    navigate(-1)
+  }
 
   return (
     <div>
@@ -202,7 +209,7 @@ export function PageContainer({ title, subtitle, actions, children, showBackButt
           {autoShowBack && (
             <button
               type="button"
-              onClick={() => navigate(-1)}
+              onClick={handleBack}
               className="btn-secondary mb-3"
               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
@@ -243,6 +250,13 @@ export function StatusBadge({ status }) {
     Draft: 'badge-gray',
     Completed: 'badge-blue',
     'Inspection Done': 'badge-blue',
+    Open: 'badge-blue',
+    Converted: 'badge-green',
+    Running: 'badge-blue',
+    Planned: 'badge-yellow',
+    Sent: 'badge-blue',
+    Accepted: 'badge-green',
+    Expired: 'badge-gray',
   }
   return <span className={clsx('badge', map[status] || 'badge-gray')}>{status}</span>
 }

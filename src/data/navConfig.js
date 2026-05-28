@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Package, BarChart3, Settings, Beaker, Wrench,
   Building2, BookOpen, ShoppingCart, TrendingUp, Hammer,
-  AlertTriangle, Users, Truck,
+  AlertTriangle, Users, Truck, PhoneCall, Target, Send, Megaphone,
 } from 'lucide-react'
 
 export const NAV_MENU = [
@@ -24,7 +24,8 @@ export const NAV_MENU = [
               { label: 'Manufacturing Item', path: '/inventory/items/manufacturing' },
             ],
           },
-          { label: 'Stock Details', path: '/reports/inventory' },
+          { label: 'Stock', path: '/reports/inventory' },
+          { label: 'Item Group', path: '/quality/item-group' },
         ],
       },
       {
@@ -65,12 +66,23 @@ export const NAV_MENU = [
     label: 'Quality',
     icon: Beaker,
     children: [
-      { label: 'Item Group', path: '/quality/item-group' },
       { label: 'Inward Inspection', path: '/quality/inward-inspection' },
     ],
   },
 
-  { label: 'Stock', icon: Package, path: '/reports/inventory' },
+  {
+    label: 'CRM',
+    icon: Target,
+    children: [
+      { label: 'CRM Dashboard', icon: LayoutDashboard, path: '/crm/dashboard' },
+      { label: 'Leads', icon: Target, path: '/crm/leads' },
+      { label: 'Enquiries', icon: PhoneCall, path: '/crm/enquiries' },
+      { label: 'Quotations', icon: Send, path: '/crm/quotations' },
+      { label: 'Campaigns', icon: Megaphone, path: '/crm/campaigns' },
+      { label: 'Contacts', icon: Users, path: '/crm/contacts' },
+      { label: 'CRM Reports', icon: BarChart3, path: '/crm/reports' },
+    ],
+  },
 
   {
     label: 'Sales',
@@ -129,7 +141,6 @@ export const NAV_MENU = [
       { label: 'Reports', icon: BarChart3, path: '/reports' },
     ],
   },
-  { label: 'Stock Report', icon: Package, path: '/reports/inventory' },
 
   { label: 'Settings', icon: Settings, path: '/settings' },
 ]

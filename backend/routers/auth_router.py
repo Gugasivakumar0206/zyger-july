@@ -84,7 +84,7 @@ def _ensure_company_row(cursor):
     cursor.execute(
         """
         INSERT INTO company_info (company_name, print_name)
-        VALUES ('Zyger ERP Demo', 'Zyger ERP Demo')
+        VALUES ('Zyger ERP', 'Zyger ERP')
         RETURNING id, company_name, print_name
         """
     )

@@ -28,7 +28,7 @@ app.register_blueprint(rack_api, url_prefix="/api")
 
 @app.route("/")
 def home():
-    return "Manufacturing ERP API Running"
+    return "Zyger ERP API Running"
 
 
 if __name__ == "__main__":

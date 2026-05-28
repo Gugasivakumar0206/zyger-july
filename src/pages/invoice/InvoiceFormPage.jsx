@@ -359,7 +359,7 @@ export default function InvoiceFormPage({ type }) {
         </div>
 
         <div style={{ marginTop: '16px', padding: '12px 14px', borderRadius: '10px', background: '#eef4ff', color: '#0b5cab', fontSize: '13px', fontWeight: '600', lineHeight: '1.7' }}>
-          <div><strong>Demo Company:</strong> {companyInfo?.print_name || companyInfo?.company_name || 'Zyger ERP Demo'}</div>
+          <div><strong>Company:</strong> {companyInfo?.print_name || companyInfo?.company_name || 'Zyger ERP'}</div>
           <div><strong>Customer:</strong> {selectedCustomer?.customer_name || '-'}</div>
           <div><strong>Selected Invoice Address:</strong> {form.invoiceAddress || '-'}</div>
         </div>

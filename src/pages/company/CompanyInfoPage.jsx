@@ -375,8 +375,8 @@ export default function CompanyInfoPage() {
 
         const nextBrand = {
           logo: company.company_logo || '',
-          name: company.print_name || company.company_name || 'Zyger ERP Demo',
-          subtitle: 'Demo Version',
+          name: 'Zyger ERP',
+          subtitle: 'ERP Suite',
         }
         localStorage.setItem(COMPANY_BRAND_CACHE_KEY, JSON.stringify(nextBrand))
         window.dispatchEvent(new Event('company-brand-updated'))

@@ -45,6 +45,10 @@ import ReportsPage           from './pages/reports/ReportsPage'
 import InventoryReportPage   from './pages/reports/InventoryReportPage'
 import BusinessReportPage    from './pages/reports/BusinessReportPage'
 import SettingsPage          from './pages/settings/SettingsPage'
+import CrmDashboardPage      from './pages/crm/CrmDashboardPage'
+import CrmListPage           from './pages/crm/CrmListPage'
+import CrmFormPage           from './pages/crm/CrmFormPage'
+import CrmReportsPage        from './pages/crm/CrmReportsPage'
 import CompanyInfoPage       from './pages/company/CompanyInfoPage'
 import CustomerCreationPage  from './pages/master/CustomerPage'
 import SupplierCreationPage  from './pages/master/SupplierPage'
@@ -81,7 +85,7 @@ export default function App() {
   if (authLoading) {
     return (
       <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#eef4ff', color: '#032d60', fontFamily: 'DM Sans, sans-serif', fontSize: '18px', fontWeight: '700' }}>
-        Loading Zyger ERP Demo...
+        Loading Zyger ERP...
       </div>
     )
   }
@@ -197,6 +201,23 @@ export default function App() {
         <Route path="reports/supplier-performance" element={<BusinessReportPage reportKey="supplier-performance" />} />
         <Route path="reports/customer-supplied" element={<BusinessReportPage reportKey="customer-supplied" />} />
         <Route path="reports/inward-inspection" element={<BusinessReportPage reportKey="inward-inspection" />} />
+        <Route path="crm/dashboard" element={<CrmDashboardPage />} />
+        <Route path="crm/leads" element={<CrmListPage entity="leads" />} />
+        <Route path="crm/leads/new" element={<CrmFormPage entity="leads" />} />
+        <Route path="crm/leads/:id" element={<CrmFormPage entity="leads" />} />
+        <Route path="crm/enquiries" element={<CrmListPage entity="enquiries" />} />
+        <Route path="crm/enquiries/new" element={<CrmFormPage entity="enquiries" />} />
+        <Route path="crm/enquiries/:id" element={<CrmFormPage entity="enquiries" />} />
+        <Route path="crm/quotations" element={<CrmListPage entity="quotations" />} />
+        <Route path="crm/quotations/new" element={<CrmFormPage entity="quotations" />} />
+        <Route path="crm/quotations/:id" element={<CrmFormPage entity="quotations" />} />
+        <Route path="crm/campaigns" element={<CrmListPage entity="campaigns" />} />
+        <Route path="crm/campaigns/new" element={<CrmFormPage entity="campaigns" />} />
+        <Route path="crm/campaigns/:id" element={<CrmFormPage entity="campaigns" />} />
+        <Route path="crm/contacts" element={<CrmListPage entity="contacts" />} />
+        <Route path="crm/contacts/new" element={<CrmFormPage entity="contacts" />} />
+        <Route path="crm/contacts/:id" element={<CrmFormPage entity="contacts" />} />
+        <Route path="crm/reports" element={<CrmReportsPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="company-info" element={<CompanyInfoPage />} />
         <Route path="master/users" element={<UserManagementPage />} />

@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routers import dashboard_router
+from routers import dashboard_router, crm_router
 from routers import auth_router
 from routers.master import inventory_router, planning_router, quality_router, maintenance_router, customer_router, supplier_router, company_router
 from routers.sales import sales_dc_router, tax_invoice_router, sale_invoice_router
@@ -11,7 +11,7 @@ from routers.purchase import job_work_router, labour_invoice_router, purchase_in
 from routers.reports import rejection_report_router, reports_router
 from routers.settings import user_settings_router, system_settings_router
 
-app = FastAPI(title="Manufacturing ERP Backend")
+app = FastAPI(title="Zyger ERP Backend")
 
 app.add_middleware(
     CORSMiddleware,
@@ -23,6 +23,7 @@ app.add_middleware(
 
 app.include_router(dashboard_router.router, prefix="/dashboard", tags=["Dashboard"])
 app.include_router(auth_router.router, prefix="/auth", tags=["Auth"])
+app.include_router(crm_router.router, prefix="/crm", tags=["CRM"])
 
 app.include_router(inventory_router.router, prefix="/inventory", tags=["Inventory"])
 app.include_router(planning_router.router, prefix="/planning", tags=["Planning"])
@@ -51,4 +52,4 @@ app.include_router(system_settings_router.router, prefix="/system-settings", tag
 
 @app.get("/")
 def root():
-    return {"message": "Manufacturing ERP Backend Running"}
+    return {"message": "Zyger ERP Backend Running"}
