@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { AlertCircle, CheckSquare, ClipboardList, History, Paperclip, Package, ReceiptText, Save, Trash2 } from 'lucide-react'
 import {
   ActionButtons,
@@ -16,6 +16,7 @@ import {
   createCrmRecord,
   deleteCrmRecord,
   getCustomers,
+  getCrmCustomerLinks,
   getCrmRecordById,
   getNextCrmNumber,
   updateCrmRecord,
@@ -27,6 +28,12 @@ function today() {
 }
 
 const CRM_DETAIL_ENTITIES = ['leads', 'enquiries', 'quotations', 'contacts']
+const CUSTOMER_LINK_SECTIONS = [
+  { key: 'leads', label: 'Leads' },
+  { key: 'enquiries', label: 'Enquiries' },
+  { key: 'quotations', label: 'Quotations' },
+  { key: 'contacts', label: 'Contacts' },
+]
 
 function blankActivity() {
   return {
@@ -76,6 +83,8 @@ export default function CrmFormPage({ entity }) {
   const [activeTab, setActiveTab] = useState('activity')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [customerLinks, setCustomerLinks] = useState(null)
+  const [linksLoading, setLinksLoading] = useState(false)
 
   const defaultForm = useMemo(() => {
     const initial = {}
@@ -113,6 +122,23 @@ export default function CrmFormPage({ entity }) {
     loadCustomers()
   }, [])
 
+  const loadCustomerLinks = async (customerId) => {
+    if (!customerId) {
+      setCustomerLinks(null)
+      setLinksLoading(false)
+      return
+    }
+
+    try {
+      setLinksLoading(true)
+      setCustomerLinks(await getCrmCustomerLinks(customerId))
+    } catch {
+      setCustomerLinks(null)
+    } finally {
+      setLinksLoading(false)
+    }
+  }
+
   useEffect(() => {
     async function loadForm() {
       try {
@@ -120,6 +146,7 @@ export default function CrmFormPage({ entity }) {
         if (isEdit) {
           const record = await getCrmRecordById(entity, id)
           setForm({ ...defaultForm, ...record })
+          await loadCustomerLinks(record.customer_id)
           return
         }
 
@@ -128,6 +155,7 @@ export default function CrmFormPage({ entity }) {
           ...defaultForm,
           [config.numberField]: result.next_number,
         })
+        setCustomerLinks(null)
       } catch (err) {
         setError(err.message)
       }
@@ -162,6 +190,7 @@ export default function CrmFormPage({ entity }) {
 
   const applyCustomer = (customerId) => {
     const selected = customers.find(customer => String(customer.id) === String(customerId))
+    loadCustomerLinks(customerId)
     setForm(prev => {
       const next = { ...prev, customer_id: customerId }
       if (!selected) return next
@@ -193,6 +222,54 @@ export default function CrmFormPage({ entity }) {
 
       return next
     })
+  }
+
+  const renderCustomerLinks = () => {
+    const selectedCustomerId = form.customer_id
+    if (!CRM_DETAIL_ENTITIES.includes(entity) || !selectedCustomerId) return null
+
+    return (
+      <SectionCard title="ERP Customer Linked CRM IDs" icon={ClipboardList}>
+        {linksLoading ? (
+          <div className="text-sm font-semibold text-blue-700 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+            Fetching customer linked IDs...
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+            {CUSTOMER_LINK_SECTIONS.map(section => {
+              const rows = customerLinks?.links?.[section.key] || []
+              return (
+                <div key={section.key} className="rounded-xl border border-blue-100 bg-white p-3">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="text-xs font-black uppercase tracking-wide text-blue-700">{section.label}</div>
+                    <span className="text-[11px] font-bold text-slate-500 bg-slate-100 rounded-full px-2 py-0.5">{rows.length}</span>
+                  </div>
+                  {rows.length ? (
+                    <div className="space-y-2">
+                      {rows.slice(0, 5).map(row => (
+                        <Link
+                          key={`${section.key}-${row.id}`}
+                          to={`/crm/${section.key}/${row.id}`}
+                          className="block rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                        >
+                          <div className="text-sm font-extrabold text-slate-800">{row.number || `#${row.id}`}</div>
+                          <div className="text-xs text-slate-500 truncate">{row.name || customerLinks?.customer?.customer_name || '-'}</div>
+                          <div className="text-[11px] font-bold text-blue-700 mt-1">{row.stage || row.status || 'Open'}</div>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-xs font-semibold text-slate-400 bg-slate-50 rounded-lg px-3 py-4 text-center">
+                      No linked {section.label.toLowerCase()} yet
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </SectionCard>
+    )
   }
 
   const handleSave = async () => {
@@ -308,7 +385,7 @@ export default function CrmFormPage({ entity }) {
               {config.singular} Entry
             </div>
             <div style={{ fontSize: '12px', color: '#dbeafe', fontWeight: '600', marginTop: '2px' }}>
-              Auto number, required details and status tracking are saved to CRM database.
+              Current ID: {form[config.numberField] || 'Generating...'} | ERP customer links are fetched automatically.
             </div>
           </div>
         </div>
@@ -325,6 +402,8 @@ export default function CrmFormPage({ entity }) {
           {config.fields.map(renderField)}
         </FormGrid>
       </SectionCard>
+
+      {renderCustomerLinks()}
 
       {tabs.length > 0 && (
         <div className="card p-0 overflow-hidden mb-4" style={{ border: '1px solid #d7e8ff' }}>

@@ -82,7 +82,7 @@ export default function InwardInspectionDetailPage() {
       subtitle="Quality -> Inward Inspection -> View inward inspection and rejected quantity details"
       actions={(
         <>
-          <Link to="/reports/inward-inspection" target="_blank" rel="noreferrer" className="btn-secondary">
+          <Link to="/reports/inward-inspection" className="btn-secondary">
             <FileText size={15} />
             Reports
           </Link>

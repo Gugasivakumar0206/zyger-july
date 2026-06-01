@@ -192,8 +192,6 @@ export default function ItemGroupPage() {
                   <td className="px-4 py-3 text-center">
                     <Link
                       to={getItemPath(item)}
-                      target="_blank"
-                      rel="noreferrer"
                       className="inline-flex items-center gap-1 rounded-lg bg-primary-50 px-3 py-1.5 text-xs font-bold text-primary-700 hover:bg-primary-100"
                     >
                       Open <ExternalLink size={12} />

@@ -86,8 +86,6 @@ export default function CrmReportsPage() {
           <Link
             key={entity}
             to={`/crm/${entity}`}
-            target="_blank"
-            rel="noreferrer"
             className="card p-4 no-underline hover:-translate-y-0.5 transition-all"
           >
             <div className="text-xs text-slate-400 font-bold uppercase tracking-wide">{CRM_ENTITIES[entity].title}</div>

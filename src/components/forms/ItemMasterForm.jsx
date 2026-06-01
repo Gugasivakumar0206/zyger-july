@@ -508,8 +508,8 @@ export default function ItemMasterForm({
                 )}
               </div>
               {form.engineeringDocumentData && (
-                <a href={form.engineeringDocumentData} target="_blank" rel="noreferrer" className="btn-secondary self-end">
-                  View PDF
+                <a href={form.engineeringDocumentData} download={form.engineeringDocumentName || 'engineering-document.pdf'} className="btn-secondary self-end">
+                  Download PDF
                 </a>
               )}
             </FormGrid>

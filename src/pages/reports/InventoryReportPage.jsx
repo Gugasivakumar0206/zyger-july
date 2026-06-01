@@ -129,13 +129,22 @@ export default function InventoryReportPage() {
       </tr>
     `).join('')
 
-    const printWindow = window.open('', '_blank', 'width=1200,height=800')
-    if (!printWindow) {
-      alert('Popup blocked. Please allow popups and try again.')
+    const printFrame = document.createElement('iframe')
+    printFrame.style.position = 'fixed'
+    printFrame.style.right = '0'
+    printFrame.style.bottom = '0'
+    printFrame.style.width = '0'
+    printFrame.style.height = '0'
+    printFrame.style.border = '0'
+    document.body.appendChild(printFrame)
+    const printDocument = printFrame.contentDocument || printFrame.contentWindow?.document
+    if (!printDocument) {
+      printFrame.remove()
+      alert('Unable to prepare print view. Please try again.')
       return
     }
 
-    printWindow.document.write(`
+    printDocument.write(`
       <html>
         <head>
           <title>Inventory Report PDF</title>
@@ -207,10 +216,11 @@ export default function InventoryReportPage() {
         </body>
       </html>
     `)
-    printWindow.document.close()
-    printWindow.focus()
+    printDocument.close()
     setTimeout(() => {
-      printWindow.print()
+      printFrame.contentWindow?.focus()
+      printFrame.contentWindow?.print()
+      setTimeout(() => printFrame.remove(), 1000)
     }, 400)
   }
 
@@ -230,7 +240,7 @@ export default function InventoryReportPage() {
             <Printer size={15} />
             Download PDF
           </button>
-          <a href={getInventoryReportCsvUrl()} className="btn-secondary" target="_blank" rel="noreferrer">
+          <a href={getInventoryReportCsvUrl()} className="btn-secondary" download>
             <Download size={15} />
             Download CSV
           </a>

@@ -32,7 +32,6 @@ export default function DCListPage({ type, basePath }) {
           label: 'Print Sales DC',
           icon: Printer,
           to: (row) => `${basePath}/${row.id}/print`,
-          target: '_blank',
           className: 'p-1.5 rounded-md hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 transition-colors',
         },
       ]
@@ -43,7 +42,6 @@ export default function DCListPage({ type, basePath }) {
             label: 'Print Labour DC',
             icon: Printer,
             to: (row) => `${basePath}/${row.id}/print`,
-            target: '_blank',
             className: 'p-1.5 rounded-md hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 transition-colors',
           },
         ]

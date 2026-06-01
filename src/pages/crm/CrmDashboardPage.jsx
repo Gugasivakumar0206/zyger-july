@@ -54,7 +54,7 @@ export default function CrmDashboardPage() {
                 </p>
               </div>
             </div>
-            <Link to="/crm/leads/new" target="_blank" rel="noreferrer" className="btn-secondary" style={{ background: '#fff', color: '#0f5cab', borderColor: '#bfdbfe' }}>
+            <Link to="/crm/leads/new" className="btn-secondary" style={{ background: '#fff', color: '#0f5cab', borderColor: '#bfdbfe' }}>
               New Lead
             </Link>
           </div>
@@ -68,8 +68,6 @@ export default function CrmDashboardPage() {
             <Link
               key={card.key}
               to={card.path}
-              target="_blank"
-              rel="noreferrer"
               className="card p-4 no-underline hover:-translate-y-0.5 transition-all"
               style={{ border: '1px solid #d7e8ff', boxShadow: '0 4px 20px rgba(59,130,246,0.10)' }}
             >
@@ -100,8 +98,6 @@ export default function CrmDashboardPage() {
               <Link
                 key={`${notification.entity}-${notification.record_id}-${notification.followup_date}-${notification.task}`}
                 to={`/crm/${notification.entity}/${notification.record_id}`}
-                target="_blank"
-                rel="noreferrer"
                 className="rounded-xl border border-blue-100 bg-blue-50/50 p-3 no-underline hover:bg-blue-50"
               >
                 <div className="flex items-center justify-between gap-2">

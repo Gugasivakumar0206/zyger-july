@@ -203,11 +203,11 @@ export default function InvoiceFormPage({ type }) {
 
   function handlePrintInvoice() {
     if (type === 'Tax Invoice' && id) {
-      window.open(`/invoice/tax/${id}/print`, '_blank', 'noopener,noreferrer')
+      navigate(`/invoice/tax/${id}/print`)
       return
     }
     if (type === 'Sale Invoice' && id) {
-      window.open(`/invoice/sale/${id}/print`, '_blank', 'noopener,noreferrer')
+      navigate(`/invoice/sale/${id}/print`)
     }
   }
 

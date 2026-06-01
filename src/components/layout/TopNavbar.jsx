@@ -7,7 +7,7 @@ import logo from '../../assets/zyger-logo.svg'
 import { clearAuth, getCompanyInfo, getStoredUser } from '../../lib/api'
 
 const COMPANY_BRAND_CACHE_KEY = 'erp_company_brand'
-const NEW_TAB_PROPS = { target: '_blank', rel: 'noreferrer' }
+const NEW_TAB_PROPS = {}
 
 /* ── Color tokens ────────────────────────────────────────────────────────── */
 const C = {

@@ -462,6 +462,76 @@ def get_crm_followup_notifications():
         connection.close()
 
 
+@router.get("/customer/{customer_id}/links")
+def get_customer_crm_links(customer_id: int):
+    connection = _connection_or_500()
+    cursor = connection.cursor(cursor_factory=RealDictCursor)
+    try:
+        _ensure_crm_tables(cursor)
+        customer = _fetch_customer(cursor, customer_id)
+
+        cursor.execute(
+            """
+            SELECT id, lead_no AS number, lead_date AS record_date, company_name AS name, stage, status
+            FROM crm_leads
+            WHERE customer_id = %s
+            ORDER BY id DESC
+            """,
+            (customer_id,),
+        )
+        leads = [_serialize(row) for row in cursor.fetchall()]
+
+        cursor.execute(
+            """
+            SELECT id, enquiry_no AS number, enquiry_date AS record_date, customer_name AS name, status
+            FROM crm_enquiries
+            WHERE customer_id = %s
+            ORDER BY id DESC
+            """,
+            (customer_id,),
+        )
+        enquiries = [_serialize(row) for row in cursor.fetchall()]
+
+        cursor.execute(
+            """
+            SELECT id, quotation_no AS number, quotation_date AS record_date, customer_name AS name, status, total_amount
+            FROM crm_quotations
+            WHERE customer_id = %s
+            ORDER BY id DESC
+            """,
+            (customer_id,),
+        )
+        quotations = [_serialize(row) for row in cursor.fetchall()]
+
+        cursor.execute(
+            """
+            SELECT id, contact_no AS number, created_at AS record_date, contact_name AS name, status
+            FROM crm_contacts
+            WHERE customer_id = %s
+            ORDER BY id DESC
+            """,
+            (customer_id,),
+        )
+        contacts = [_serialize(row) for row in cursor.fetchall()]
+
+        return {
+            "customer": _serialize(customer),
+            "links": {
+                "leads": leads,
+                "enquiries": enquiries,
+                "quotations": quotations,
+                "contacts": contacts,
+            },
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    finally:
+        cursor.close()
+        connection.close()
+
+
 @router.get("/{entity}/next-number")
 def get_next_crm_number(entity: str):
     config = _entity_or_404(entity)

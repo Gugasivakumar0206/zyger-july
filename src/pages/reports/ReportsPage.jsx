@@ -27,8 +27,6 @@ export default function ReportsPage() {
             key={report.label}
             className="card text-left hover:shadow-card-hover transition-shadow duration-200 group"
             to={report.path}
-            target="_blank"
-            rel="noreferrer"
           >
             <div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center mb-3 group-hover:bg-primary-100 transition-colors">
               <report.icon size={20} className="text-primary-600" />

@@ -43,7 +43,7 @@ export default function InwardInspectionPage() {
         key: 'inspection_no',
         label: 'Inspection No',
         render: (value, row) => (
-          <Link to={`/quality/inward-inspection/${row.id}`} target="_blank" rel="noreferrer" className="text-primary-700 font-semibold hover:underline">
+          <Link to={`/quality/inward-inspection/${row.id}`} className="text-primary-700 font-semibold hover:underline">
             {value}
           </Link>
         ),
@@ -79,11 +79,11 @@ export default function InwardInspectionPage() {
       subtitle="Quality -> Inward Inspection -> Track accepted, rejected, and rework quantities"
       actions={(
         <>
-          <Link to="/reports/inward-inspection" target="_blank" rel="noreferrer" className="btn-secondary">
+          <Link to="/reports/inward-inspection" className="btn-secondary">
             <FileText size={15} />
             Reports
           </Link>
-          <Link to="/quality/inward-inspection/new" target="_blank" rel="noreferrer" className="btn-primary">
+          <Link to="/quality/inward-inspection/new" className="btn-primary">
             <Printer size={15} />
             New Inward Inspection
           </Link>
@@ -122,7 +122,7 @@ export default function InwardInspectionPage() {
           addLabel="New Inward Inspection"
           rowPath="/quality/inward-inspection"
           extraActions={
-            <Link to="/reports/inward-inspection" target="_blank" rel="noreferrer" className="btn-secondary">
+            <Link to="/reports/inward-inspection" className="btn-secondary">
               <FileText size={14} />
               Inspection Report
             </Link>

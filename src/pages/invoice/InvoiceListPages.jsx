@@ -29,7 +29,6 @@ function InvoiceListPage({ type, basePath }) {
           label: `Print ${type}`,
           icon: Printer,
           to: (row) => `${basePath}/${row.id}/print`,
-          target: '_blank',
           className: 'p-1.5 rounded-md hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 transition-colors',
         },
       ]

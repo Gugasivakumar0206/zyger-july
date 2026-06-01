@@ -285,6 +285,10 @@ export function getCrmFollowupNotifications() {
   return request('/crm/notifications/followups')
 }
 
+export function getCrmCustomerLinks(customerId) {
+  return request(`/crm/customer/${customerId}/links`)
+}
+
 export function getCrmRecords(entity, query = '') {
   const suffix = query ? `?q=${encodeURIComponent(query)}` : ''
   return request(`/crm/${entity}${suffix}`)

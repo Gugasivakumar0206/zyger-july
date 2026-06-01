@@ -360,7 +360,7 @@ export default function DCFormPage({ type }) {
         <div className="flex items-center gap-2">
           {isSalesDC && id && (
             <button
-              onClick={() => window.open(`/sales/dc/${id}/print`, '_blank', 'noopener,noreferrer')}
+              onClick={() => navigate(`/sales/dc/${id}/print`)}
               className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
             >
               <Printer size={14} />
