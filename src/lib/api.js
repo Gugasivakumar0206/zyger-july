@@ -281,6 +281,10 @@ export function getCrmSummary() {
   return request('/crm/summary')
 }
 
+export function getCrmFollowupNotifications() {
+  return request('/crm/notifications/followups')
+}
+
 export function getCrmRecords(entity, query = '') {
   const suffix = query ? `?q=${encodeURIComponent(query)}` : ''
   return request(`/crm/${entity}${suffix}`)

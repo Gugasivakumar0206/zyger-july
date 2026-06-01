@@ -257,6 +257,8 @@ export function StatusBadge({ status }) {
     Sent: 'badge-blue',
     Accepted: 'badge-green',
     Expired: 'badge-gray',
+    Upcoming: 'badge-blue',
+    Overdue: 'badge-red',
   }
   return <span className={clsx('badge', map[status] || 'badge-gray')}>{status}</span>
 }

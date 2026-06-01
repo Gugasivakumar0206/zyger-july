@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BarChart3, Megaphone, PhoneCall, Send, Target, Users } from 'lucide-react'
+import { BarChart3, Bell, Megaphone, PhoneCall, Send, Target, Users } from 'lucide-react'
 import { PageContainer, StatusBadge } from '../../components/ui'
 import { getCrmSummary } from '../../lib/api'
 
@@ -16,6 +16,7 @@ export default function CrmDashboardPage() {
   const [summary, setSummary] = useState({})
   const [recentLeads, setRecentLeads] = useState([])
   const [recentQuotations, setRecentQuotations] = useState([])
+  const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -25,6 +26,7 @@ export default function CrmDashboardPage() {
         setSummary(result.summary || {})
         setRecentLeads(result.recent_leads || [])
         setRecentQuotations(result.recent_quotations || [])
+        setNotifications(result.notifications || [])
       } finally {
         setLoading(false)
       }
@@ -86,6 +88,33 @@ export default function CrmDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+        <div className="card p-0 overflow-hidden xl:col-span-2" style={{ border: '1px solid #d7e8ff' }}>
+          <div className="px-4 py-3 flex items-center gap-2" style={{ background: 'linear-gradient(135deg, #0f5cab 0%, #3b82f6 100%)' }}>
+            <Bell size={16} color="#fff" />
+            <h3 className="text-sm font-bold m-0 text-white">Follow-up Notifications</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 p-4">
+            {notifications.length === 0 ? (
+              <div className="text-sm text-slate-400">No upcoming CRM follow-ups.</div>
+            ) : notifications.slice(0, 8).map(notification => (
+              <Link
+                key={`${notification.entity}-${notification.record_id}-${notification.followup_date}-${notification.task}`}
+                to={`/crm/${notification.entity}/${notification.record_id}`}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-xl border border-blue-100 bg-blue-50/50 p-3 no-underline hover:bg-blue-50"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-xs font-bold text-primary-700">{notification.number}</div>
+                  <StatusBadge status={notification.status} />
+                </div>
+                <div className="text-sm font-bold text-slate-800 mt-2">{notification.name}</div>
+                <div className="text-xs text-slate-500 mt-1">{notification.task} - {notification.followup_date}</div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
         <div className="card p-0 overflow-hidden" style={{ border: '1px solid #d7e8ff' }}>
           <div className="px-4 py-3 flex items-center gap-2" style={{ background: 'linear-gradient(135deg, #0f5cab 0%, #3b82f6 100%)' }}>
             <Target size={16} color="#fff" />

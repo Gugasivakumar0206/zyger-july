@@ -1,9 +1,9 @@
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, HTTPException
-from psycopg2.extras import RealDictCursor
+from psycopg2.extras import Json, RealDictCursor
 
 from database.db_connection import get_connection
 
@@ -17,9 +17,10 @@ ENTITY_CONFIG = {
         "prefix": "LED",
         "date_column": "lead_date",
         "fields": [
-            "lead_no", "lead_date", "company_name", "contact_person", "phone", "email",
+            "lead_no", "lead_date", "customer_id", "company_name", "contact_person", "phone", "email",
             "source", "stage", "priority", "assigned_to", "expected_value",
-            "next_followup_date", "remarks", "status",
+            "next_followup_date", "remarks", "status", "todos", "history", "activities", "products",
+            "transactions", "attachments",
         ],
         "search_columns": ["lead_no", "company_name", "contact_person", "phone", "email", "stage", "status"],
     },
@@ -29,9 +30,9 @@ ENTITY_CONFIG = {
         "prefix": "ENQ",
         "date_column": "enquiry_date",
         "fields": [
-            "enquiry_no", "enquiry_date", "lead_id", "customer_name", "contact_person",
+            "enquiry_no", "enquiry_date", "lead_id", "customer_id", "customer_name", "contact_person",
             "phone", "email", "requirement", "estimated_value", "assigned_to",
-            "status", "remarks",
+            "status", "remarks", "todos", "history", "activities", "products", "transactions", "attachments",
         ],
         "search_columns": ["enquiry_no", "customer_name", "contact_person", "phone", "email", "status"],
     },
@@ -41,8 +42,9 @@ ENTITY_CONFIG = {
         "prefix": "QUO",
         "date_column": "quotation_date",
         "fields": [
-            "quotation_no", "quotation_date", "enquiry_id", "customer_name", "subject",
+            "quotation_no", "quotation_date", "enquiry_id", "customer_id", "customer_name", "subject",
             "subtotal", "tax_amount", "total_amount", "valid_until", "status", "remarks",
+            "todos", "history", "activities", "products", "transactions", "attachments",
         ],
         "search_columns": ["quotation_no", "customer_name", "subject", "status"],
     },
@@ -63,8 +65,9 @@ ENTITY_CONFIG = {
         "prefix": "CON",
         "date_column": "created_at",
         "fields": [
-            "contact_no", "contact_name", "company_name", "phone", "email",
-            "designation", "city", "state", "source", "status", "remarks",
+            "contact_no", "customer_id", "contact_name", "company_name", "phone", "email",
+            "designation", "city", "state", "source", "status", "remarks", "todos", "history", "activities",
+            "attachments",
         ],
         "search_columns": ["contact_no", "contact_name", "company_name", "phone", "email", "status"],
     },
@@ -98,6 +101,7 @@ def _ensure_crm_tables(cursor):
             id BIGSERIAL PRIMARY KEY,
             lead_no VARCHAR(50) NOT NULL UNIQUE,
             lead_date DATE DEFAULT CURRENT_DATE,
+            customer_id BIGINT,
             company_name VARCHAR(200) NOT NULL,
             contact_person VARCHAR(150),
             phone VARCHAR(40),
@@ -110,6 +114,12 @@ def _ensure_crm_tables(cursor):
             next_followup_date DATE,
             remarks TEXT,
             status VARCHAR(40) DEFAULT 'Open',
+            todos JSONB DEFAULT '[]'::JSONB,
+            history JSONB DEFAULT '[]'::JSONB,
+            activities JSONB DEFAULT '[]'::JSONB,
+            products JSONB DEFAULT '[]'::JSONB,
+            transactions JSONB DEFAULT '[]'::JSONB,
+            attachments JSONB DEFAULT '[]'::JSONB,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -122,6 +132,7 @@ def _ensure_crm_tables(cursor):
             enquiry_no VARCHAR(50) NOT NULL UNIQUE,
             enquiry_date DATE DEFAULT CURRENT_DATE,
             lead_id BIGINT,
+            customer_id BIGINT,
             customer_name VARCHAR(200) NOT NULL,
             contact_person VARCHAR(150),
             phone VARCHAR(40),
@@ -131,6 +142,12 @@ def _ensure_crm_tables(cursor):
             assigned_to VARCHAR(150),
             status VARCHAR(40) DEFAULT 'Open',
             remarks TEXT,
+            todos JSONB DEFAULT '[]'::JSONB,
+            history JSONB DEFAULT '[]'::JSONB,
+            activities JSONB DEFAULT '[]'::JSONB,
+            products JSONB DEFAULT '[]'::JSONB,
+            transactions JSONB DEFAULT '[]'::JSONB,
+            attachments JSONB DEFAULT '[]'::JSONB,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -143,6 +160,7 @@ def _ensure_crm_tables(cursor):
             quotation_no VARCHAR(50) NOT NULL UNIQUE,
             quotation_date DATE DEFAULT CURRENT_DATE,
             enquiry_id BIGINT,
+            customer_id BIGINT,
             customer_name VARCHAR(200) NOT NULL,
             subject VARCHAR(250),
             subtotal NUMERIC(14,2) DEFAULT 0,
@@ -151,6 +169,12 @@ def _ensure_crm_tables(cursor):
             valid_until DATE,
             status VARCHAR(40) DEFAULT 'Draft',
             remarks TEXT,
+            todos JSONB DEFAULT '[]'::JSONB,
+            history JSONB DEFAULT '[]'::JSONB,
+            activities JSONB DEFAULT '[]'::JSONB,
+            products JSONB DEFAULT '[]'::JSONB,
+            transactions JSONB DEFAULT '[]'::JSONB,
+            attachments JSONB DEFAULT '[]'::JSONB,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -179,6 +203,7 @@ def _ensure_crm_tables(cursor):
         CREATE TABLE IF NOT EXISTS crm_contacts (
             id BIGSERIAL PRIMARY KEY,
             contact_no VARCHAR(50) NOT NULL UNIQUE,
+            customer_id BIGINT,
             contact_name VARCHAR(150) NOT NULL,
             company_name VARCHAR(200),
             phone VARCHAR(40),
@@ -189,11 +214,90 @@ def _ensure_crm_tables(cursor):
             source VARCHAR(100),
             status VARCHAR(40) DEFAULT 'Active',
             remarks TEXT,
+            todos JSONB DEFAULT '[]'::JSONB,
+            history JSONB DEFAULT '[]'::JSONB,
+            activities JSONB DEFAULT '[]'::JSONB,
+            attachments JSONB DEFAULT '[]'::JSONB,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """
     )
+    for table in ["crm_leads", "crm_enquiries", "crm_quotations", "crm_contacts"]:
+        cursor.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS customer_id BIGINT")
+        cursor.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS todos JSONB DEFAULT '[]'::JSONB")
+        cursor.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS history JSONB DEFAULT '[]'::JSONB")
+        cursor.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS activities JSONB DEFAULT '[]'::JSONB")
+        cursor.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS attachments JSONB DEFAULT '[]'::JSONB")
+    for table in ["crm_leads", "crm_enquiries", "crm_quotations"]:
+        cursor.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS products JSONB DEFAULT '[]'::JSONB")
+        cursor.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS transactions JSONB DEFAULT '[]'::JSONB")
+
+
+def _fetch_customer(cursor, customer_id):
+    if not customer_id:
+        return None
+    cursor.execute(
+        """
+        SELECT
+            id,
+            customer_code,
+            customer_name,
+            print_name,
+            phone,
+            mobile,
+            email,
+            city,
+            state,
+            gstin,
+            contacts
+        FROM customers
+        WHERE id = %s
+        """,
+        (customer_id,),
+    )
+    customer = cursor.fetchone()
+    if customer is None:
+        raise HTTPException(status_code=404, detail="Selected ERP customer not found")
+    return customer
+
+
+def _first_contact_name(customer):
+    contacts = customer.get("contacts") if customer else None
+    if isinstance(contacts, list) and contacts:
+        return contacts[0].get("name") or ""
+    return ""
+
+
+def _apply_customer_master(cursor, entity: str, data: Dict[str, Any]):
+    customer = _fetch_customer(cursor, data.get("customer_id"))
+    if customer is None:
+        return data
+
+    customer_name = customer["customer_name"]
+    contact_name = _first_contact_name(customer)
+    phone = customer["mobile"] or customer["phone"]
+    email = customer["email"]
+
+    if entity == "leads":
+        data["company_name"] = customer_name
+        data["contact_person"] = data.get("contact_person") or contact_name
+        data["phone"] = data.get("phone") or phone
+        data["email"] = data.get("email") or email
+    elif entity in ["enquiries", "quotations"]:
+        data["customer_name"] = customer_name
+        if entity == "enquiries":
+            data["contact_person"] = data.get("contact_person") or contact_name
+            data["phone"] = data.get("phone") or phone
+            data["email"] = data.get("email") or email
+    elif entity == "contacts":
+        data["company_name"] = customer_name
+        data["contact_name"] = data.get("contact_name") or contact_name or customer_name
+        data["phone"] = data.get("phone") or phone
+        data["email"] = data.get("email") or email
+        data["city"] = data.get("city") or customer["city"]
+        data["state"] = data.get("state") or customer["state"]
+    return data
 
 
 def _next_number(cursor, config):
@@ -230,6 +334,12 @@ def _serialize(row):
         else:
             result[key] = value
     return result
+
+
+def _db_value(value):
+    if isinstance(value, (list, dict)):
+        return Json(value)
+    return value
 
 
 def _validate_required(entity: str, payload: Dict[str, Any]):
@@ -279,7 +389,72 @@ def get_crm_summary():
             "summary": summary,
             "recent_leads": recent_leads,
             "recent_quotations": recent_quotations,
+            "notifications": _collect_followup_notifications(cursor),
         }
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    finally:
+        cursor.close()
+        connection.close()
+
+
+def _collect_followup_notifications(cursor):
+    notifications = []
+    sources = [
+        ("leads", "crm_leads", "lead_no", "company_name"),
+        ("enquiries", "crm_enquiries", "enquiry_no", "customer_name"),
+        ("quotations", "crm_quotations", "quotation_no", "customer_name"),
+        ("contacts", "crm_contacts", "contact_no", "contact_name"),
+    ]
+    today_value = date.today()
+    upcoming_value = today_value + timedelta(days=7)
+
+    for entity, table, number_column, name_column in sources:
+        cursor.execute(
+            f"""
+            SELECT id, {number_column} AS number, {name_column} AS name, activities
+            FROM {table}
+            WHERE activities IS NOT NULL
+            ORDER BY id DESC
+            LIMIT 100
+            """
+        )
+        for row in cursor.fetchall():
+            activities = row.get("activities") or []
+            if not isinstance(activities, list):
+                continue
+            for activity in activities:
+                if not activity.get("followup"):
+                    continue
+                followup_date = activity.get("followup_date")
+                if not followup_date:
+                    continue
+                try:
+                    parsed_date = date.fromisoformat(str(followup_date)[:10])
+                except ValueError:
+                    continue
+                if parsed_date <= upcoming_value:
+                    notifications.append({
+                        "entity": entity,
+                        "record_id": row["id"],
+                        "number": row["number"],
+                        "name": row["name"],
+                        "followup_date": parsed_date.isoformat(),
+                        "task": activity.get("followup_task") or activity.get("task_name") or "Follow-up",
+                        "to": activity.get("followup_to") or activity.get("employee") or "",
+                        "status": "Overdue" if parsed_date < today_value else "Upcoming",
+                    })
+
+    return sorted(notifications, key=lambda item: item["followup_date"])[:20]
+
+
+@router.get("/notifications/followups")
+def get_crm_followup_notifications():
+    connection = _connection_or_500()
+    cursor = connection.cursor(cursor_factory=RealDictCursor)
+    try:
+        _ensure_crm_tables(cursor)
+        return {"notifications": _collect_followup_notifications(cursor)}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     finally:
@@ -358,6 +533,7 @@ def create_crm_record(entity: str, payload: Dict[str, Any]):
         data = {field: _clean_value(payload.get(field)) for field in config["fields"]}
         if not data.get(config["number_column"]):
             data[config["number_column"]] = _next_number(cursor, config)
+        data = _apply_customer_master(cursor, entity, data)
         _validate_required(entity, data)
 
         columns = list(data.keys())
@@ -368,7 +544,7 @@ def create_crm_record(entity: str, payload: Dict[str, Any]):
             VALUES ({placeholders})
             RETURNING *
             """,
-            [data[column] for column in columns],
+            [_db_value(data[column]) for column in columns],
         )
         record = _serialize(cursor.fetchone())
         connection.commit()
@@ -392,6 +568,7 @@ def update_crm_record(entity: str, record_id: int, payload: Dict[str, Any]):
     try:
         _ensure_crm_tables(cursor)
         data = {field: _clean_value(payload.get(field)) for field in config["fields"] if field in payload}
+        data = _apply_customer_master(cursor, entity, data)
         _validate_required(entity, {**payload, **data})
         if not data:
             raise HTTPException(status_code=400, detail="No fields to update")
@@ -404,7 +581,7 @@ def update_crm_record(entity: str, record_id: int, payload: Dict[str, Any]):
             WHERE id = %s
             RETURNING *
             """,
-            [*data.values(), record_id],
+            [*[_db_value(value) for value in data.values()], record_id],
         )
         row = cursor.fetchone()
         if row is None:

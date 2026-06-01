@@ -17,6 +17,7 @@ export const CRM_ENTITIES = {
     fields: [
       { name: 'lead_no', label: 'Lead Number', type: 'text', readOnly: true },
       { name: 'lead_date', label: 'Lead Date', type: 'date' },
+      { name: 'customer_id', label: 'ERP Customer', type: 'customer-select' },
       { name: 'company_name', label: 'Company Name', type: 'text', required: true },
       { name: 'contact_person', label: 'Contact Person', type: 'text' },
       { name: 'phone', label: 'Phone', type: 'text' },
@@ -50,6 +51,7 @@ export const CRM_ENTITIES = {
       { name: 'enquiry_no', label: 'Enquiry Number', type: 'text', readOnly: true },
       { name: 'enquiry_date', label: 'Enquiry Date', type: 'date' },
       { name: 'lead_id', label: 'Lead ID Reference', type: 'number' },
+      { name: 'customer_id', label: 'ERP Customer', type: 'customer-select', required: true },
       { name: 'customer_name', label: 'Customer Name', type: 'text', required: true },
       { name: 'contact_person', label: 'Contact Person', type: 'text' },
       { name: 'phone', label: 'Phone', type: 'text' },
@@ -80,6 +82,7 @@ export const CRM_ENTITIES = {
       { name: 'quotation_no', label: 'Quotation Number', type: 'text', readOnly: true },
       { name: 'quotation_date', label: 'Quotation Date', type: 'date' },
       { name: 'enquiry_id', label: 'Enquiry ID Reference', type: 'number' },
+      { name: 'customer_id', label: 'ERP Customer', type: 'customer-select', required: true },
       { name: 'customer_name', label: 'Customer Name', type: 'text', required: true },
       { name: 'subject', label: 'Subject', type: 'text' },
       { name: 'subtotal', label: 'Sub Total', type: 'number' },
@@ -134,6 +137,7 @@ export const CRM_ENTITIES = {
     ],
     fields: [
       { name: 'contact_no', label: 'Contact Number', type: 'text', readOnly: true },
+      { name: 'customer_id', label: 'ERP Customer', type: 'customer-select' },
       { name: 'contact_name', label: 'Contact Name', type: 'text', required: true },
       { name: 'company_name', label: 'Company Name', type: 'text' },
       { name: 'phone', label: 'Phone', type: 'text' },
