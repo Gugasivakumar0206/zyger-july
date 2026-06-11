@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { createItem, deleteItem, getItemById, getItemGroups, getNextItemNumber, updateItem } from '../../lib/api'
+import { createItem, deleteItem, getItemById, getItemGroups, getNextItemNumber, getProcessMasterRecords, updateItem } from '../../lib/api'
 import {
   SectionCard, FormGrid, FormInput, NumberInput, SelectDropdown,
   Textarea, Checkbox, DatePicker, ImageUploader,
@@ -118,6 +118,17 @@ function TaxBlock({ prefix, form, bind, label = 'HSN' }) {
 }
 
 // ─── MAIN FORM ────────────────────────────────────────────────────────────────
+const PURCHASABLE_LABEL = 'Purchasable Item'
+const PURCHASE_DB_TYPE = 'Purchase Item'
+
+function toDbItemType(value) {
+  return value === PURCHASABLE_LABEL ? PURCHASE_DB_TYPE : value || PURCHASE_DB_TYPE
+}
+
+function toDisplayItemType(value) {
+  return value === PURCHASE_DB_TYPE ? PURCHASABLE_LABEL : value || PURCHASABLE_LABEL
+}
+
 export default function ItemMasterForm({
   title = 'Item Master',
   subtitle,
@@ -130,23 +141,37 @@ export default function ItemMasterForm({
   const [saveError, setSaveError] = useState('')
   const [saveSuccess, setSaveSuccess] = useState('')
   const [itemGroups, setItemGroups] = useState([])
+  const [catalogs, setCatalogs] = useState([])
+  const [processGroups, setProcessGroups] = useState([])
+  const [processes, setProcesses] = useState([])
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }))
   const bind = (key) => ({ value: form[key] ?? '', onChange: e => set(key, e.target.value) })
   const bindCheck = (key) => ({ checked: !!form[key], onChange: v => set(key, v) })
   const show = (n) => showSections === 'all' || showSections.includes(n)
-  const selectedGroupType = form.groupType || form.itemType || 'Purchase Item'
+  const selectedGroupType = toDbItemType(form.groupType || form.itemType || PURCHASE_DB_TYPE)
   const filteredItemGroups = itemGroups.filter((group) => {
-    const groupType = group.group_type || 'Purchase Item'
+    const groupType = toDbItemType(group.group_type || PURCHASE_DB_TYPE)
     return groupType === selectedGroupType
   })
 
   useEffect(() => {
     async function loadItemGroups() {
       try {
-        const result = await getItemGroups()
+        const [result, catalogRows, processGroupRows, processRows] = await Promise.all([
+          getItemGroups(),
+          getProcessMasterRecords('item-catalog').catch(() => []),
+          getProcessMasterRecords('process-group').catch(() => []),
+          getProcessMasterRecords('process').catch(() => []),
+        ])
         setItemGroups((result || []).filter((group) => group.is_active !== false))
+        setCatalogs(catalogRows || [])
+        setProcessGroups(processGroupRows || [])
+        setProcesses(processRows || [])
       } catch {
         setItemGroups([])
+        setCatalogs([])
+        setProcessGroups([])
+        setProcesses([])
       }
     }
 
@@ -157,7 +182,7 @@ export default function ItemMasterForm({
     if (!form.itemGroup || !itemGroups.length) return
     const matched = itemGroups.find((group) => (
       group.group_name === form.itemGroup &&
-      (group.group_type || 'Purchase Item') === selectedGroupType
+      toDbItemType(group.group_type || PURCHASE_DB_TYPE) === selectedGroupType
     ))
     if (!matched) return
     setForm((current) => (
@@ -171,7 +196,7 @@ export default function ItemMasterForm({
     if (!form.itemGroup || !itemGroups.length) return
     const existsForType = itemGroups.some((group) => (
       group.group_name === form.itemGroup &&
-      (group.group_type || 'Purchase Item') === selectedGroupType
+      toDbItemType(group.group_type || PURCHASE_DB_TYPE) === selectedGroupType
     ))
     if (!existsForType) {
       setForm((current) => ({ ...current, itemGroup: '', inspectionRequired: false }))
@@ -183,7 +208,7 @@ export default function ItemMasterForm({
 
     async function loadNextItemCode() {
       try {
-        const itemType = form.itemType || form.groupType || 'Purchase Item'
+        const itemType = toDbItemType(form.itemType || form.groupType || PURCHASE_DB_TYPE)
         const result = await getNextItemNumber(itemType)
         setForm((current) => current.itemCode ? current : { ...current, itemCode: result.nextNumber || '' })
       } catch {
@@ -202,8 +227,8 @@ export default function ItemMasterForm({
         setForm({
           ...(item.form_data || {}),
           id: item.id,
-          itemType: item.item_type,
-          groupType: item.item_type,
+          itemType: toDisplayItemType(item.item_type),
+          groupType: toDisplayItemType(item.item_type),
           itemCode: item.item_code,
           itemName: item.item_name,
           printName: item.print_name || '',
@@ -263,7 +288,7 @@ export default function ItemMasterForm({
 
     try {
       const payload = {
-        itemType: form.itemType || form.groupType || 'Purchase Item',
+        itemType: toDbItemType(form.itemType || form.groupType || PURCHASE_DB_TYPE),
         itemCode: form.itemCode,
         itemName: form.itemName,
         printName: form.printName,
@@ -357,6 +382,7 @@ export default function ItemMasterForm({
     { key: 'sacCgstOut', label: 'SAC CGST Out', type: 'number' },
     { key: 'sacSgstOut', label: 'SAC SGST Out', type: 'number' },
   ])
+  const isPurchasableItem = selectedGroupType === PURCHASE_DB_TYPE
 
   return (
     <PageContainer
@@ -395,7 +421,7 @@ export default function ItemMasterForm({
         <SectionCard title="Item Information" icon={Info}>
           <FormGrid cols={3}>
             <SelectDropdown label="Group Type" required
-              options={['Purchase Item', 'Customer Supplied', 'Manufacturing Item']}
+              options={[PURCHASABLE_LABEL, 'Customer Supplied', 'Manufacturing Item']}
               {...bind('groupType')} />
             <FormInput label="Item Code" required {...bind('itemCode')} placeholder="ITM-0001" />
             <SelectDropdown label="Item Group"
@@ -403,12 +429,41 @@ export default function ItemMasterForm({
               {...bind('itemGroup')} />
             <FormInput label="Item Name" required {...bind('itemName')} placeholder="Enter item name" />
             <FormInput label="Print Name" {...bind('printName')} />
+            {!isPurchasableItem && (
+              <SelectDropdown label="Classification"
+                options={['Raw Material', 'Semi Finished', 'Finished Goods', 'Bought Out', 'Service', 'Consumable']}
+                {...bind('classification')} />
+            )}
+            {!isPurchasableItem && (
+              <SelectDropdown label="Product Item Type"
+                options={['Manufacturing', PURCHASABLE_LABEL, 'Customer Supplied', 'Sub Assembly', 'Finished Product']}
+                {...bind('productItemType')} />
+            )}
+            <SelectDropdown label="Item Catalog"
+              options={catalogs.map((catalog) => catalog.name)}
+              {...bind('itemCatalog')} />
+            <SelectDropdown label="Process Group"
+              options={processGroups.map((group) => group.name)}
+              {...bind('processGroup')} />
+            <SelectDropdown label="Formula"
+              options={['Standard', 'Weight Based', 'Qty Based', 'Manual']}
+              {...bind('formula')} />
+            <NumberInput label="Salable Price" {...bind('salablePrice')} placeholder="0.00" />
+            <NumberInput label="Manufacturing Cost" {...bind('manufacturingCost')} placeholder="0.00" />
+            <SelectDropdown label="Primary Department"
+              options={['Production', 'Purchase', 'Stores', 'Quality', 'Engineering', 'Maintenance']}
+              {...bind('primaryDepartment')} />
+            <FormInput label="Drawing Number" {...bind('drawingNo')} placeholder="Drawing Number" />
+            <SelectDropdown label="Amount Calculation Type"
+              options={['Standard Cost', 'Actual Cost', 'FIFO', 'Weighted Average']}
+              {...bind('amountCalculationType')} />
             <SelectDropdown label="Location"
               options={['MAIN', 'Store A', 'Store B', 'Store C', 'Warehouse']}
               {...bind('location')} />
             <SelectDropdown label="Stock UOM"
               options={['NOS', 'Kg', 'Mtr', 'Ltr', 'Set', 'Box', 'Pcs', 'Roll', 'Sheet']}
               {...bind('stockUOM')} />
+            <FormInput label="HSN Code" {...bind('hsnCode')} />
             <Textarea label="Description" className="lg:col-span-2" rows={2} {...bind('description')} />
           </FormGrid>
 
@@ -418,6 +473,10 @@ export default function ItemMasterForm({
             <Checkbox label="BOM Maintain" {...bindCheck('bomMaintain')} />
             <Checkbox label="Billing Item" {...bindCheck('billingItem')} />
             <Checkbox label="Inspection Required" {...bindCheck('inspectionRequired')} />
+            <Checkbox label="Active" {...bindCheck('active')} />
+            <Checkbox label="Purchase" {...bindCheck('purchase')} />
+            <Checkbox label="TC Customer Format" {...bindCheck('tcCustomerFormat')} />
+            <Checkbox label="Batch Number" {...bindCheck('batchNumber')} />
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Storage</span>
               <SelectDropdown placeholder="Bin / Box / Tray / Trolley"
@@ -432,6 +491,26 @@ export default function ItemMasterForm({
           <div style={{ marginTop: '12px' }}>
             <ImageUploader label="Item Image" />
           </div>
+          <FormGrid cols={3}>
+            <SelectDropdown label="Consume Department"
+              options={['Please Select', 'A216 Gr.WCB', 'Common', 'Core Shop', 'Department 1', 'Production', 'Stores']}
+              {...bind('consumeDepartment')} />
+            <Textarea label="General Remark" rows={3} {...bind('generalRemark')} />
+            <div>
+              <label className="form-label">Attachment</label>
+              <input type="file" accept="application/pdf" onChange={handleEngineeringPdfUpload} className="form-input" />
+              {form.engineeringDocumentName && <div style={{ marginTop: '6px', fontSize: '12px', fontWeight: '700', color: '#0f5cab' }}>{form.engineeringDocumentName}</div>}
+            </div>
+            <SelectDropdown label="Document Type"
+              options={['Drawing', 'Specification', 'TC Format', 'Customer Drawing', 'Other']}
+              {...bind('documentType')} />
+            <FormInput label="Attachment Remarks" {...bind('attachmentRemarks')} />
+          </FormGrid>
+          {processes.length > 0 && (
+            <div style={{ marginTop: '14px', padding: '12px 14px', borderRadius: '10px', background: '#eff6ff', color: '#1e3a8a', fontSize: '12px', fontWeight: '700' }}>
+              Available process masters: {processes.slice(0, 6).map((process) => process.name).join(', ')}
+            </div>
+          )}
         </SectionCard>
       )}
 

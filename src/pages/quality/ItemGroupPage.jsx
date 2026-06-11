@@ -1,20 +1,24 @@
 import { useEffect, useState } from 'react'
-import { ExternalLink, PackageSearch, PlusCircle } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { PlusCircle } from 'lucide-react'
 
 import { FormGrid, FormInput, PageContainer, SectionCard, SelectDropdown, StatusBadge } from '../../components/ui/index'
 import DataTable from '../../components/tables/DataTable'
-import { createItemGroup, deleteItemGroup, getItemGroups, getItems } from '../../lib/api'
+import { createItemGroup, deleteItemGroup, getItemGroups, getNextItemGroupNumber } from '../../lib/api'
 
-const GROUP_TYPE_OPTIONS = ['Purchase Item', 'Manufacturing Item', 'Customer Supplied']
+const PURCHASABLE_LABEL = 'Purchasable Item'
+const PURCHASE_DB_TYPE = 'Purchase Item'
+const GROUP_TYPE_OPTIONS = [PURCHASABLE_LABEL, 'Manufacturing Item', 'Customer Supplied']
 
-function normalizeItemType(value) {
-  if (value === 'Manufacturing') return 'Manufacturing Item'
-  return value || 'Purchase Item'
+function toDisplayType(value) {
+  return value === PURCHASE_DB_TYPE ? PURCHASABLE_LABEL : value || PURCHASABLE_LABEL
+}
+
+function toDbType(value) {
+  return value === PURCHASABLE_LABEL ? PURCHASE_DB_TYPE : value || PURCHASE_DB_TYPE
 }
 
 const COLUMNS = [
-  { key: 'id', label: 'Group ID', width: 120 },
+  { key: 'groupCode', label: 'Group ID', width: 120 },
   { key: 'groupType', label: 'Item Type', width: 170 },
   { key: 'groupName', label: 'Group Name', width: 180 },
   { key: 'description', label: 'Description' },
@@ -24,9 +28,7 @@ const COLUMNS = [
 
 export default function ItemGroupPage() {
   const [data, setData] = useState([])
-  const [items, setItems] = useState([])
-  const [form, setForm] = useState({ groupName: '', groupType: 'Purchase Item', description: '', inspectionRequired: false, isActive: true })
-  const [selectedGroup, setSelectedGroup] = useState('')
+  const [form, setForm] = useState({ groupCode: '', groupName: '', groupType: PURCHASABLE_LABEL, description: '', inspectionRequired: false, isActive: true })
   const [error, setError] = useState('')
 
   async function loadGroups() {
@@ -35,8 +37,9 @@ export default function ItemGroupPage() {
       const result = await getItemGroups()
       setData((result || []).map((row) => ({
         id: row.id,
+        groupCode: row.group_code || `IG-${String(row.id).padStart(3, '0')}`,
         groupName: row.group_name,
-        groupType: row.group_type || 'Purchase Item',
+        groupType: toDisplayType(row.group_type),
         description: row.description || '-',
         inspectionRequired: row.inspection_required,
         isActive: row.is_active,
@@ -48,46 +51,29 @@ export default function ItemGroupPage() {
 
   useEffect(() => {
     loadGroups()
+    getNextItemGroupNumber()
+      .then(result => setForm(current => ({ ...current, groupCode: result.group_code || current.groupCode })))
+      .catch(() => {})
   }, [])
-
-  useEffect(() => {
-    async function loadItems() {
-      try {
-        const result = await getItems()
-        setItems(result || [])
-      } catch {
-        setItems([])
-      }
-    }
-
-    loadItems()
-  }, [])
-
-  const selectedGroupInfo = data.find((group) => group.groupName === selectedGroup)
-  const filteredItems = items.filter((item) => {
-    if (!selectedGroupInfo) return false
-    return (
-      (item.item_group || '') === selectedGroupInfo.groupName &&
-      normalizeItemType(item.item_type) === selectedGroupInfo.groupType
-    )
-  })
 
   async function addGroup() {
     if (!form.groupName.trim()) {
       alert('Group name is required.')
       return
     }
+    const duplicate = data.some(group => (
+      group.groupName.trim().toLowerCase() === form.groupName.trim().toLowerCase() &&
+      group.groupType === form.groupType
+    ))
+    if (duplicate) {
+      alert('This item group already exists for the selected item type.')
+      return
+    }
 
-    await createItemGroup({ ...form, groupName: form.groupName.trim(), groupType: form.groupType || 'Purchase Item' })
-    setForm({ groupName: '', groupType: form.groupType || 'Purchase Item', description: '', inspectionRequired: false, isActive: true })
+    await createItemGroup({ ...form, groupName: form.groupName.trim(), groupType: toDbType(form.groupType) })
+    const next = await getNextItemGroupNumber().catch(() => ({ group_code: '' }))
+    setForm({ groupCode: next.group_code || '', groupName: '', groupType: form.groupType || PURCHASABLE_LABEL, description: '', inspectionRequired: false, isActive: true })
     await loadGroups()
-  }
-
-  function getItemPath(item) {
-    const itemType = item.item_type || 'Purchase Item'
-    if (itemType === 'Manufacturing Item') return `/inventory/items/manufacturing/${item.id}`
-    if (itemType === 'Customer Supplied') return `/inventory/items/customer-supplied/${item.id}`
-    return `/inventory/items/purchase/${item.id}`
   }
 
   async function handleDelete(row) {
@@ -97,14 +83,15 @@ export default function ItemGroupPage() {
   }
 
   return (
-    <PageContainer title="Item Group" subtitle="Master -> Inventory -> Quality. Define item groups by item type and inspection requirement.">
+    <PageContainer title="Item Group" subtitle="Master -> Inventory. Define item groups by item type and inspection requirement.">
       {error && (
         <div style={{ marginBottom: '16px', padding: '12px 14px', borderRadius: '10px', background: '#fee2e2', color: '#991b1b', fontSize: '13px', fontWeight: '700' }}>
           {error}
         </div>
       )}
-      <SectionCard title="Add Item Group" icon={PlusCircle} defaultOpen>
-        <FormGrid cols={3}>
+      <SectionCard title="Create Item Group" icon={PlusCircle} defaultOpen>
+        <FormGrid cols={2}>
+          <FormInput label="Group ID" value={form.groupCode} readOnly />
           <SelectDropdown
             label="Item Type"
             required
@@ -136,73 +123,6 @@ export default function ItemGroupPage() {
         data={data}
         onDelete={handleDelete}
       />
-
-      <SectionCard title="View Items By Group" icon={PackageSearch} defaultOpen>
-        <FormGrid cols={3}>
-          <SelectDropdown
-            label="Select Item Group"
-            placeholder="Select group to view items"
-            options={data.map((group) => ({
-              value: group.groupName,
-              label: `${group.groupName} - ${group.groupType}`,
-            }))}
-            value={selectedGroup}
-            onChange={(event) => setSelectedGroup(event.target.value)}
-          />
-          <div className="card !p-4">
-            <p className="text-xs text-slate-500">Selected Type</p>
-            <p className="text-lg font-bold text-slate-800">{selectedGroupInfo?.groupType || '-'}</p>
-          </div>
-          <div className="card !p-4">
-            <p className="text-xs text-slate-500">Items In Group</p>
-            <p className="text-lg font-bold text-slate-800">{filteredItems.length}</p>
-          </div>
-        </FormGrid>
-
-        <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200">
-          <table className="min-w-full text-sm">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="px-4 py-3 text-left font-semibold text-slate-600">Item Code</th>
-                <th className="px-4 py-3 text-left font-semibold text-slate-600">Item Name</th>
-                <th className="px-4 py-3 text-left font-semibold text-slate-600">Print Name</th>
-                <th className="px-4 py-3 text-left font-semibold text-slate-600">UOM</th>
-                <th className="px-4 py-3 text-left font-semibold text-slate-600">HSN</th>
-                <th className="px-4 py-3 text-left font-semibold text-slate-600">Status</th>
-                <th className="px-4 py-3 text-center font-semibold text-slate-600">Open</th>
-              </tr>
-            </thead>
-            <tbody>
-              {!selectedGroup ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-slate-500 font-medium">Select RM / item group to view items.</td>
-                </tr>
-              ) : filteredItems.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-slate-500 font-medium">No items found in this group.</td>
-                </tr>
-              ) : filteredItems.map((item) => (
-                <tr key={item.id} className="border-t border-slate-100">
-                  <td className="px-4 py-3 font-semibold text-primary-700">{item.item_code}</td>
-                  <td className="px-4 py-3 text-slate-800">{item.item_name}</td>
-                  <td className="px-4 py-3 text-slate-600">{item.print_name || '-'}</td>
-                  <td className="px-4 py-3 text-slate-600">{item.uom || '-'}</td>
-                  <td className="px-4 py-3 text-slate-600">{item.hsn_code || '-'}</td>
-                  <td className="px-4 py-3"><StatusBadge status={item.status || 'Active'} /></td>
-                  <td className="px-4 py-3 text-center">
-                    <Link
-                      to={getItemPath(item)}
-                      className="inline-flex items-center gap-1 rounded-lg bg-primary-50 px-3 py-1.5 text-xs font-bold text-primary-700 hover:bg-primary-100"
-                    >
-                      Open <ExternalLink size={12} />
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </SectionCard>
     </PageContainer>
   )
 }

@@ -8,25 +8,26 @@ import { CRM_ENTITIES } from './crmConfig'
 export default function CrmListPage({ entity }) {
   const config = CRM_ENTITIES[entity]
   const [records, setRecords] = useState([])
+  const [search, setSearch] = useState('')
   const [filters, setFilters] = useState({ status: '', stage: '', dateFrom: '', dateTo: '' })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    async function loadRecords() {
+    const timer = setTimeout(async () => {
       try {
         setError('')
         setLoading(true)
-        setRecords(await getCrmRecords(entity))
+        setRecords(await getCrmRecords(entity, search))
       } catch (err) {
         setError(err.message)
       } finally {
         setLoading(false)
       }
-    }
+    }, 250)
 
-    loadRecords()
-  }, [entity])
+    return () => clearTimeout(timer)
+  }, [entity, search])
 
   const handleDelete = async (row) => {
     if (!window.confirm(`Delete this ${config.singular.toLowerCase()}?`)) return
@@ -106,7 +107,8 @@ export default function CrmListPage({ entity }) {
           <Filter size={15} className="text-primary-600" />
           <div className="text-sm font-bold text-slate-800">Filter {config.singular} Records</div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+          <input className="form-input" value={search} onChange={e => setSearch(e.target.value)} placeholder="DB search by no, customer, phone, email..." />
           <select className="form-select" value={filters.status} onChange={e => setFilters(current => ({ ...current, status: e.target.value }))}>
             <option value="">All Status</option>
             {statusOptions.map(status => <option key={status} value={status}>{status}</option>)}
@@ -118,7 +120,7 @@ export default function CrmListPage({ entity }) {
           <input className="form-input" type="date" value={filters.dateFrom} onChange={e => setFilters(current => ({ ...current, dateFrom: e.target.value }))} />
           <input className="form-input" type="date" value={filters.dateTo} onChange={e => setFilters(current => ({ ...current, dateTo: e.target.value }))} />
         </div>
-        <button className="btn-secondary mt-3" onClick={() => setFilters({ status: '', stage: '', dateFrom: '', dateTo: '' })}>
+        <button className="btn-secondary mt-3" onClick={() => { setSearch(''); setFilters({ status: '', stage: '', dateFrom: '', dateTo: '' }) }}>
           Clear Filters
         </button>
       </div>

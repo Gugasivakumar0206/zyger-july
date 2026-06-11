@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { AlertCircle, CheckSquare, ClipboardList, History, Paperclip, Package, ReceiptText, Save, Trash2 } from 'lucide-react'
+import { AlertCircle, CheckSquare, ClipboardList, History, Paperclip, Package, Plus, ReceiptText, Save, Trash2, Users } from 'lucide-react'
 import {
   ActionButtons,
   DatePicker,
@@ -80,6 +80,7 @@ export default function CrmFormPage({ entity }) {
   const isEdit = Boolean(id)
   const [form, setForm] = useState({})
   const [customers, setCustomers] = useState([])
+  const [customerSearch, setCustomerSearch] = useState('')
   const [activeTab, setActiveTab] = useState('activity')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -111,16 +112,20 @@ export default function CrmFormPage({ entity }) {
   }, [config, entity])
 
   useEffect(() => {
+    const timer = setTimeout(() => {
     async function loadCustomers() {
       try {
-        setCustomers(await getCustomers())
+        setCustomers(await getCustomers(customerSearch))
       } catch {
         setCustomers([])
       }
     }
 
     loadCustomers()
-  }, [])
+    }, 250)
+
+    return () => clearTimeout(timer)
+  }, [customerSearch])
 
   const loadCustomerLinks = async (customerId) => {
     if (!customerId) {
@@ -295,6 +300,8 @@ export default function CrmFormPage({ entity }) {
     navigate(`/crm/${entity}`)
   }
 
+  const selectedCustomer = customers.find(customer => String(customer.id) === String(form.customer_id))
+
   const renderField = (field) => {
     const commonProps = {
       key: field.name,
@@ -318,16 +325,33 @@ export default function CrmFormPage({ entity }) {
 
     if (field.type === 'customer-select') {
       return (
-        <SelectDropdown
-          {...commonProps}
-          value={form.customer_id || ''}
-          onChange={e => applyCustomer(e.target.value)}
-          options={customers.map(customer => ({
-            value: customer.id,
-            label: `${customer.customer_code || 'CUS'} - ${customer.customer_name}`,
-          }))}
-          placeholder="-- Select ERP Customer --"
-        />
+        <div key={field.name}>
+          <FormInput
+            label="Search ERP Customer"
+            value={customerSearch}
+            onChange={e => setCustomerSearch(e.target.value)}
+            placeholder="Search by customer, mobile, email, GSTIN"
+          />
+          <div className="mt-2">
+            <SelectDropdown
+              {...commonProps}
+              label={field.label}
+              value={form.customer_id || ''}
+              onChange={e => applyCustomer(e.target.value)}
+              options={customers.map(customer => ({
+                value: customer.id,
+                label: `${customer.customer_code || 'CUS'} - ${customer.customer_name}`,
+              }))}
+              placeholder="-- Select ERP Customer --"
+            />
+            {selectedCustomer && (
+              <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-800">
+                <Users size={13} />
+                {selectedCustomer.customer_code || 'CUS'} - {selectedCustomer.customer_name}
+              </div>
+            )}
+          </div>
+        </div>
       )
     }
 
@@ -366,13 +390,23 @@ export default function CrmFormPage({ entity }) {
       showBackButton
       backPath={`/crm/${entity}`}
       actions={
-        <ActionButtons
-          onSave={handleSave}
-          onCancel={() => navigate(`/crm/${entity}`)}
-          onDelete={isEdit ? handleDelete : null}
-          saveLabel={loading ? 'Saving...' : `Save ${config.singular}`}
-          loading={loading}
-        />
+        <>
+          <button type="button" className="btn-secondary" onClick={() => navigate('/master/customer', { state: { crmLead: form } })}>
+            <Users size={14} /> Create Customer
+          </button>
+          {entity === 'leads' && (
+            <button type="button" className="btn-secondary" onClick={() => navigate('/master/customer', { state: { crmLead: form } })}>
+              <Plus size={14} /> Convert Lead
+            </button>
+          )}
+          <ActionButtons
+            onSave={handleSave}
+            onCancel={() => navigate(`/crm/${entity}`)}
+            onDelete={isEdit ? handleDelete : null}
+            saveLabel={loading ? 'Saving...' : `Save ${config.singular}`}
+            loading={loading}
+          />
+        </>
       }
     >
       <div className="card p-0 overflow-hidden mb-4" style={{ border: '1px solid #d7e8ff' }}>

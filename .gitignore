@@ -3,4 +3,6 @@ dist/
 backend/__pycache__/
 backend/.env
 .env
+outputs/
+certbot/conf/
 *.pyc

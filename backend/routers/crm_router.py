@@ -300,6 +300,63 @@ def _apply_customer_master(cursor, entity: str, data: Dict[str, Any]):
     return data
 
 
+def _next_customer_code(cursor):
+    cursor.execute("SELECT customer_code FROM customers WHERE customer_code LIKE 'CUS-%' ORDER BY id DESC LIMIT 1")
+    row = cursor.fetchone()
+    if not row or not row["customer_code"]:
+        return "CUS-001"
+    try:
+        number = int(str(row["customer_code"]).split("-")[-1]) + 1
+    except ValueError:
+        number = 1
+    return f"CUS-{number:03d}"
+
+
+def _ensure_customer_from_accepted_quotation(cursor, data: Dict[str, Any]):
+    if str(data.get("status") or "").lower() not in {"accepted", "approved"}:
+        return data
+    if data.get("customer_id"):
+        return data
+
+    customer_name = data.get("customer_name")
+    if not customer_name:
+        return data
+
+    cursor.execute(
+        """
+        SELECT id
+        FROM customers
+        WHERE LOWER(customer_name) = LOWER(%s)
+        LIMIT 1
+        """,
+        (customer_name,),
+    )
+    existing = cursor.fetchone()
+    if existing:
+        data["customer_id"] = existing["id"]
+        return data
+
+    cursor.execute(
+        """
+        INSERT INTO customers (
+            customer_code, customer_name, print_name, status, email, phone, mobile, created_at
+        )
+        VALUES (%s, %s, %s, 'Active', %s, %s, %s, CURRENT_TIMESTAMP)
+        RETURNING id
+        """,
+        (
+            _next_customer_code(cursor),
+            customer_name,
+            customer_name,
+            data.get("email"),
+            data.get("phone"),
+            data.get("phone"),
+        ),
+    )
+    data["customer_id"] = cursor.fetchone()["id"]
+    return data
+
+
 def _next_number(cursor, config):
     number_column = config["number_column"]
     table = config["table"]
@@ -604,6 +661,8 @@ def create_crm_record(entity: str, payload: Dict[str, Any]):
         if not data.get(config["number_column"]):
             data[config["number_column"]] = _next_number(cursor, config)
         data = _apply_customer_master(cursor, entity, data)
+        if entity == "quotations":
+            data = _ensure_customer_from_accepted_quotation(cursor, data)
         _validate_required(entity, data)
 
         columns = list(data.keys())
@@ -639,6 +698,10 @@ def update_crm_record(entity: str, record_id: int, payload: Dict[str, Any]):
         _ensure_crm_tables(cursor)
         data = {field: _clean_value(payload.get(field)) for field in config["fields"] if field in payload}
         data = _apply_customer_master(cursor, entity, data)
+        if entity == "quotations":
+            quotation_data = _ensure_customer_from_accepted_quotation(cursor, {**payload, **data})
+            if quotation_data.get("customer_id"):
+                data["customer_id"] = quotation_data["customer_id"]
         _validate_required(entity, {**payload, **data})
         if not data:
             raise HTTPException(status_code=400, detail="No fields to update")

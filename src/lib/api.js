@@ -121,8 +121,9 @@ export function deleteItem(id) {
   })
 }
 
-export function getCustomers() {
-  return request('/customer/')
+export function getCustomers(query = '') {
+  const suffix = query ? `?q=${encodeURIComponent(query)}` : ''
+  return request(`/customer/${suffix}`)
 }
 
 export function getCustomerById(id) {
@@ -143,6 +144,66 @@ export function getSupplierById(id) {
 
 export function getNextSupplierNumber() {
   return request('/supplier/next-number')
+}
+
+export function getSubcontractors(query = '') {
+  const suffix = query ? `?q=${encodeURIComponent(query)}` : ''
+  return request(`/subcontract-dc/${suffix}`)
+}
+
+export function getSubcontractorById(id) {
+  return request(`/subcontract-dc/master/${id}`)
+}
+
+export function getNextSubcontractorNumber() {
+  return request('/subcontract-dc/next-number')
+}
+
+export function createSubcontractor(payload) {
+  return request('/subcontract-dc/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function updateSubcontractor(id, payload) {
+  return request(`/subcontract-dc/master/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function deleteSubcontractor(id) {
+  return request(`/subcontract-dc/master/${id}`, {
+    method: 'DELETE',
+  })
+}
+
+export function getSubcontractorDCs(query = '') {
+  const suffix = query ? `?q=${encodeURIComponent(query)}` : ''
+  return request(`/subcontract-dc/transactions${suffix}`)
+}
+
+export function getSubcontractorDCById(id) {
+  return request(`/subcontract-dc/transactions/${id}`)
+}
+
+export function getNextSubcontractorDCNumber() {
+  return request('/subcontract-dc/transactions/next-number')
+}
+
+export function createSubcontractorDC(payload) {
+  return request('/subcontract-dc/transactions', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function updateSubcontractorDC(id, payload) {
+  return request(`/subcontract-dc/transactions/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
 }
 
 export function getPurchaseInwards(inwardType = '') {
@@ -220,6 +281,10 @@ export function createInwardInspection(payload) {
 
 export function getItemGroups() {
   return request('/quality/item-group')
+}
+
+export function getNextItemGroupNumber() {
+  return request('/quality/item-group/next-number')
 }
 
 export function createItemGroup(payload) {
@@ -319,6 +384,92 @@ export function updateCrmRecord(entity, id, payload) {
 export function deleteCrmRecord(entity, id) {
   return request(`/crm/${entity}/${id}`, {
     method: 'DELETE',
+  })
+}
+
+export function getProcessDocuments(processType, query = '') {
+  const suffix = query ? `?q=${encodeURIComponent(query)}` : ''
+  return request(`/planning/process/${processType}${suffix}`)
+}
+
+export function getProcessDocumentById(processType, id) {
+  return request(`/planning/process/${processType}/${id}`)
+}
+
+export function getNextProcessNumber(processType) {
+  return request(`/planning/process/${processType}/next-number`)
+}
+
+export function getProcessSourceOptions(processType) {
+  return request(`/planning/process/${processType}/source-options`)
+}
+
+export function createProcessDocument(processType, payload) {
+  return request(`/planning/process/${processType}`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function updateProcessDocument(processType, id, payload) {
+  return request(`/planning/process/${processType}/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function runSalesOrderMrp(id) {
+  return request(`/planning/process/so/${id}/run-mrp`, {
+    method: 'POST',
+  })
+}
+
+export function generateWorkOrderFromBom(id) {
+  return request(`/planning/process/bom/${id}/generate-work-order`, {
+    method: 'POST',
+  })
+}
+
+export function generateWorkOrderFromMrp(id) {
+  return request(`/planning/process/mrp/${id}/generate-work-order`, {
+    method: 'POST',
+  })
+}
+
+export function generateWorkOrderFromSalesOrder(id) {
+  return request(`/planning/process/so/${id}/generate-work-order`, {
+    method: 'POST',
+  })
+}
+
+export function getPurchaseNotifications() {
+  return request('/planning/notifications/purchase')
+}
+
+export function getProcessMasterRecords(masterType, query = '') {
+  const suffix = query ? `?q=${encodeURIComponent(query)}` : ''
+  return request(`/planning/master/${masterType}${suffix}`)
+}
+
+export function getProcessMasterRecord(masterType, id) {
+  return request(`/planning/master/${masterType}/${id}`)
+}
+
+export function getNextProcessMasterNumber(masterType) {
+  return request(`/planning/master/${masterType}/next-number`)
+}
+
+export function createProcessMasterRecord(masterType, payload) {
+  return request(`/planning/master/${masterType}`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function updateProcessMasterRecord(masterType, id, payload) {
+  return request(`/planning/master/${masterType}/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
   })
 }
 

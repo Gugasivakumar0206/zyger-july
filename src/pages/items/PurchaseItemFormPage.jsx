@@ -5,10 +5,10 @@ export default function PurchaseItemFormPage() {
   const { id } = useParams()
   return (
     <ItemMasterForm
-      title={id ? 'Edit Purchase Item' : 'New Purchase Item'}
-      subtitle="Inventory -> Items -> Purchase Item"
+      title={id ? 'Edit Purchasable Item' : 'New Purchasable Item'}
+      subtitle="Inventory -> Items -> Purchasable Item"
       showSections="all"
-      initialData={id ? { id, itemType: 'Purchase Item', groupType: 'Purchase Item' } : { itemType: 'Purchase Item', groupType: 'Purchase Item' }}
+      initialData={id ? { id, itemType: 'Purchasable Item', groupType: 'Purchasable Item' } : { itemType: 'Purchasable Item', groupType: 'Purchasable Item' }}
     />
   )
 }

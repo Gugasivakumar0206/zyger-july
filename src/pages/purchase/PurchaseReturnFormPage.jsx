@@ -217,7 +217,7 @@ export default function PurchaseReturnFormPage({
       {bootLoading && <div style={{ marginBottom: '16px', padding: '12px 14px', borderRadius: '10px', background: '#eef2ff', color: '#4338ca', fontSize: '13px', fontWeight: '700' }}>Loading return data...</div>}
 
       <SectionCard title="General Details" defaultOpen>
-        <FormGrid cols={3}>
+        <FormGrid cols={2}>
           <FormInput label="Entry Type" value={title} readOnly />
           <FormInput label="Return No" required value={form.returnNo} onChange={(event) => set('returnNo', event.target.value)} />
           <FormInput label="Return Date" required type="date" value={form.returnDate} onChange={(event) => set('returnDate', event.target.value)} />
@@ -275,7 +275,7 @@ export default function PurchaseReturnFormPage({
       </SectionCard>
 
       <SectionCard title="Addition / Deduction / Tax Details" defaultOpen={false}>
-        <FormGrid cols={3}>
+        <FormGrid cols={2}>
           <FormInput label="Tax %" type="number" value={form.taxPercent} onChange={(event) => set('taxPercent', event.target.value)} />
           <FormInput label="Total Qty" value={totalQty.toFixed(2)} readOnly />
           <FormInput label="Assessable Value" value={subtotal.toFixed(2)} readOnly />

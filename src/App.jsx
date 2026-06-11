@@ -32,6 +32,10 @@ import LabourInvoicePage     from './pages/invoice/LabourInvoicePage'
 import InvoiceFormPage       from './pages/invoice/InvoiceFormPage'
 import TaxInvoicePrintPage   from './pages/invoice/TaxInvoicePrintPage'
 import SaleInvoicePrintPage  from './pages/invoice/SaleInvoicePrintPage'
+import SubcontractorPage     from './pages/subcontractor/SubcontractorPage'
+import SubcontractorFormPage from './pages/subcontractor/SubcontractorFormPage'
+import SubcontractorDCPage   from './pages/subcontractor/SubcontractorDCPage'
+import SubcontractorDCFormPage from './pages/subcontractor/SubcontractorDCFormPage'
 import RejectionReportPage   from './pages/rejection/RejectionReportPage'
 import RejectionFormPage     from './pages/rejection/RejectionFormPage'
 import UOMPage               from './pages/planning/UOMPage'
@@ -49,6 +53,10 @@ import CrmDashboardPage      from './pages/crm/CrmDashboardPage'
 import CrmListPage           from './pages/crm/CrmListPage'
 import CrmFormPage           from './pages/crm/CrmFormPage'
 import CrmReportsPage        from './pages/crm/CrmReportsPage'
+import ProcessListPage       from './pages/process/ProcessListPage'
+import ProcessFormPage       from './pages/process/ProcessFormPage'
+import ProcessMasterPage     from './pages/process/ProcessMasterPage'
+import ProcessFlowPage       from './pages/process/ProcessFlowPage'
 import CompanyInfoPage       from './pages/company/CompanyInfoPage'
 import CustomerCreationPage  from './pages/master/CustomerPage'
 import SupplierCreationPage  from './pages/master/SupplierPage'
@@ -94,6 +102,24 @@ export default function App() {
     return <LoginPage onAuthenticated={setUser} />
   }
 
+  const processTypes = [
+    'so',
+    'wo',
+    'po',
+    'pr',
+    'bom',
+    'mrp',
+    'production',
+    'routesheet',
+    'raw-material-issue',
+    'fg-stock',
+    'general-dc',
+    'iar',
+    'rai',
+    'jo-inward',
+    'supplier-invoice',
+  ]
+
   return (
     <Routes>
       <Route path="/" element={<MainLayout />}>
@@ -119,6 +145,9 @@ export default function App() {
         <Route path="inventory/inward/grn" element={<PurchasePage inwardType="GRN" title="GRN / Purchase Inward" subtitle="Manage goods receipt and purchase inward stock updates" addLabel="Add GRN / Purchase Inward" basePath="/inventory/inward/grn" />} />
         <Route path="inventory/inward/grn/new" element={<PurchaseFormPage inwardType="GRN" title="GRN / Purchase Inward" subtitle="Inventory -> Inward -> GRN / Purchase Inward" saveLabel="Save GRN / Purchase Inward" cancelPath="/inventory/inward/grn" numberPrefix="GRN" />} />
         <Route path="inventory/inward/grn/:id" element={<PurchaseFormPage inwardType="GRN" title="GRN / Purchase Inward" subtitle="Inventory -> Inward -> GRN / Purchase Inward" saveLabel="Save GRN / Purchase Inward" cancelPath="/inventory/inward/grn" numberPrefix="GRN" />} />
+        <Route path="inventory/inward-process" element={<PurchasePage inwardType="PO" title="Inward List" subtitle="Inventory -> Inward Process -> Inward List" addLabel="Create Inward" basePath="/inventory/inward-process" />} />
+        <Route path="inventory/inward-process/new" element={<PurchaseFormPage inwardType="PO" title="Create Inward" subtitle="Inventory -> Inward Process -> Create Inward" saveLabel="Save Inward" cancelPath="/inventory/inward-process" numberPrefix="INW" />} />
+        <Route path="inventory/inward-process/:id" element={<PurchaseFormPage inwardType="PO" title="Edit Inward" subtitle="Inventory -> Inward Process -> Edit Inward" saveLabel="Save Inward" cancelPath="/inventory/inward-process" numberPrefix="INW" />} />
         <Route path="inventory/inward/po" element={<PurchasePage inwardType="PO" title="PO Inward" subtitle="Manage purchase order inward entries and stock updates" addLabel="Add PO Inward" basePath="/inventory/inward/po" />} />
         <Route path="inventory/inward/po/new" element={<PurchaseFormPage inwardType="PO" title="PO Inward" subtitle="Inventory -> Inward -> PO Inward" saveLabel="Save PO Inward" cancelPath="/inventory/inward/po" numberPrefix="POI" />} />
         <Route path="inventory/inward/po/:id" element={<PurchaseFormPage inwardType="PO" title="PO Inward" subtitle="Inventory -> Inward -> PO Inward" saveLabel="Save PO Inward" cancelPath="/inventory/inward/po" numberPrefix="POI" />} />
@@ -148,7 +177,12 @@ export default function App() {
         <Route path="sales/tax-invoice" element={<ComingSoon title="Tax Invoice (Sales)" />} />
         <Route path="sales/sale-invoice" element={<ComingSoon title="Sale Invoice" />} />
 
-        <Route path="subcontractor/dc" element={<ComingSoon title="Subcontractor DC" />} />
+        <Route path="subcontractor" element={<SubcontractorPage />} />
+        <Route path="subcontractor/new" element={<SubcontractorFormPage />} />
+        <Route path="subcontractor/:id" element={<SubcontractorFormPage />} />
+        <Route path="subcontractor/dc" element={<SubcontractorDCPage />} />
+        <Route path="subcontractor/dc/new" element={<SubcontractorDCFormPage />} />
+        <Route path="subcontractor/dc/:id" element={<SubcontractorDCFormPage />} />
 
         <Route path="purchase/jobwork/jodc" element={<ComingSoon title="Job Work - JODC" />} />
         <Route path="purchase/labour-invoice" element={<ComingSoon title="Labour Invoice (Purchase)" />} />
@@ -178,6 +212,31 @@ export default function App() {
         <Route path="rejection/:id" element={<RejectionFormPage />} />
 
         <Route path="planning/uom" element={<UOMPage />} />
+        <Route path="master/product-items" element={<ManufacturingPage />} />
+        <Route path="master/product-items/new" element={<ManufacturingFormPage />} />
+        <Route path="master/product-items/:id" element={<ManufacturingFormPage />} />
+        <Route path="master/item-catalog" element={<ProcessMasterPage masterType="item-catalog" />} />
+        <Route path="master/item-catalog/new" element={<ProcessMasterPage masterType="item-catalog" mode="form" />} />
+        <Route path="master/item-catalog/:id" element={<ProcessMasterPage masterType="item-catalog" mode="form" />} />
+        <Route path="master/process" element={<ProcessMasterPage masterType="process" />} />
+        <Route path="master/process/new" element={<ProcessMasterPage masterType="process" mode="form" />} />
+        <Route path="master/process/:id" element={<ProcessMasterPage masterType="process" mode="form" />} />
+        <Route path="master/process-group" element={<ProcessMasterPage masterType="process-group" />} />
+        <Route path="master/process-group/new" element={<ProcessMasterPage masterType="process-group" mode="form" />} />
+        <Route path="master/process-group/:id" element={<ProcessMasterPage masterType="process-group" mode="form" />} />
+        <Route path="process-flow" element={<ProcessFlowPage />} />
+        {processTypes.map((processType) => (
+          <Route key={`${processType}-list`} path={`process/${processType}`} element={<ProcessListPage processType={processType} />} />
+        ))}
+        {processTypes.map((processType) => (
+          <Route key={`${processType}-new`} path={`process/${processType}/new`} element={<ProcessFormPage processType={processType} />} />
+        ))}
+        <Route path="process/po/with-pr" element={<Navigate to="/process/po/new" replace />} />
+        <Route path="process/po/without-pr" element={<Navigate to="/process/po/new" replace />} />
+        <Route path="process/po/schedule" element={<ProcessListPage processType="po" viewMode="schedule" />} />
+        {processTypes.map((processType) => (
+          <Route key={`${processType}-edit`} path={`process/${processType}/:id`} element={<ProcessFormPage processType={processType} />} />
+        ))}
         <Route path="quality/item-group" element={<ItemGroupPage />} />
         <Route path="quality/inward-inspection" element={<InwardInspectionPage />} />
         <Route path="quality/inward-inspection/new" element={<InwardInspectionFormPage />} />

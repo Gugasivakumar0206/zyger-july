@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: zyger-local-postgres
+    environment:
+      POSTGRES_DB: zyger_erp_demo
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "12345"
+    ports:
+      - "5435:5432"
+    volumes:
+      - zyger_local_postgres_data:/var/lib/postgresql/data
+      - ./backend/sql/init_app.sql:/docker-entrypoint-initdb.d/init_app.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d zyger_erp_demo"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: ./backend
+    container_name: zyger-local-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: zyger_erp_demo
+      DB_USER: postgres
+      DB_PASSWORD: "12345"
+      AUTH_SECRET_KEY: zyger_local_demo_secret_2026
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_API_BASE_URL: /api
+    container_name: zyger-local-frontend
+    depends_on:
+      - backend
+    ports:
+      - "8081:80"
+
+volumes:
+  zyger_local_postgres_data:

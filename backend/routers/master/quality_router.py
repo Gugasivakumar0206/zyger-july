@@ -35,6 +35,7 @@ class InwardInspectionPayload(BaseModel):
 
 
 class ItemGroupPayload(BaseModel):
+    groupCode: Optional[str] = None
     groupName: str
     groupType: Optional[str] = "Purchase Item"
     description: Optional[str] = None
@@ -58,6 +59,7 @@ def _ensure_quality_tables(cursor):
         """
         CREATE TABLE IF NOT EXISTS item_groups (
             id BIGSERIAL PRIMARY KEY,
+            group_code VARCHAR(50) UNIQUE,
             group_name VARCHAR(150) NOT NULL UNIQUE,
             group_type VARCHAR(80) DEFAULT 'Purchase Item',
             description TEXT,
@@ -76,6 +78,12 @@ def _ensure_quality_tables(cursor):
     cursor.execute(
         """
         ALTER TABLE item_groups
+        ADD COLUMN IF NOT EXISTS group_code VARCHAR(50)
+        """
+    )
+    cursor.execute(
+        """
+        ALTER TABLE item_groups
         DROP CONSTRAINT IF EXISTS item_groups_group_name_key
         """
     )
@@ -83,6 +91,13 @@ def _ensure_quality_tables(cursor):
         """
         CREATE UNIQUE INDEX IF NOT EXISTS idx_item_groups_type_name
         ON item_groups (group_type, group_name)
+        """
+    )
+    cursor.execute(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_item_groups_group_code
+        ON item_groups (group_code)
+        WHERE group_code IS NOT NULL
         """
     )
     cursor.execute(
@@ -159,6 +174,28 @@ def _next_inspection_no(cursor):
     except ValueError:
         number = 1
     return f"INI-{number:03d}"
+
+
+def _next_item_group_code(cursor):
+    _ensure_quality_tables(cursor)
+    cursor.execute(
+        """
+        SELECT group_code
+        FROM item_groups
+        WHERE group_code LIKE 'IG-%'
+        ORDER BY id DESC
+        LIMIT 1
+        """
+    )
+    row = cursor.fetchone()
+    if not row or not row["group_code"]:
+        return "IG-001"
+
+    try:
+        number = int(str(row["group_code"]).split("-")[-1]) + 1
+    except ValueError:
+        number = 1
+    return f"IG-{number:03d}"
 
 
 def _fetch_source_headers(cursor, inward_type: str):
@@ -241,15 +278,29 @@ def list_item_groups():
         connection.commit()
         cursor.execute(
             """
-            SELECT id, group_name, group_type, description, inspection_required, is_active, created_at
+            SELECT id, group_code, group_name, group_type, description, inspection_required, is_active, created_at
             FROM item_groups
             ORDER BY group_type ASC, group_name ASC
             """
         )
         return cursor.fetchall()
+    except HTTPException:
+        connection.rollback()
+        raise
     except Exception as exc:
         connection.rollback()
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+    finally:
+        cursor.close()
+        connection.close()
+
+
+@router.get("/item-group/next-number")
+def next_item_group_number():
+    connection = _connection_or_500()
+    cursor = connection.cursor(cursor_factory=RealDictCursor)
+    try:
+        return {"group_code": _next_item_group_code(cursor)}
     finally:
         cursor.close()
         connection.close()
@@ -262,15 +313,32 @@ def create_item_group(payload: ItemGroupPayload):
     data = payload.model_dump()
     try:
         _ensure_quality_tables(cursor)
+        group_name = str(data["groupName"] or "").strip()
+        group_type = data["groupType"] or "Purchase Item"
+        if not group_name:
+            raise HTTPException(status_code=400, detail="Group name is required")
         cursor.execute(
             """
-            INSERT INTO item_groups (group_name, group_type, description, inspection_required, is_active)
-            VALUES (%s, %s, %s, %s, %s)
-            RETURNING id, group_name, group_type, description, inspection_required, is_active, created_at
+            SELECT id
+            FROM item_groups
+            WHERE LOWER(group_name) = LOWER(%s)
+              AND group_type = %s
+            """,
+            (group_name, group_type),
+        )
+        if cursor.fetchone():
+            raise HTTPException(status_code=400, detail="Item group already exists for this item type")
+        group_code = data.get("groupCode") or _next_item_group_code(cursor)
+        cursor.execute(
+            """
+            INSERT INTO item_groups (group_code, group_name, group_type, description, inspection_required, is_active)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id, group_code, group_name, group_type, description, inspection_required, is_active, created_at
             """,
             (
-                data["groupName"],
-                data["groupType"] or "Purchase Item",
+                group_code,
+                group_name,
+                group_type,
                 data["description"],
                 data["inspectionRequired"],
                 data["isActive"],
@@ -281,6 +349,8 @@ def create_item_group(payload: ItemGroupPayload):
         return {"message": "Item group created successfully", "itemGroup": row}
     except Exception as exc:
         connection.rollback()
+        if "idx_item_groups_type_name" in str(exc) or "idx_item_groups_group_code" in str(exc):
+            raise HTTPException(status_code=400, detail="Duplicate item group is not allowed") from exc
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     finally:
         cursor.close()

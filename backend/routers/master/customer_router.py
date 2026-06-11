@@ -94,12 +94,24 @@ def get_next_customer_number():
 
 
 @router.get("/")
-def list_customers():
+def list_customers(q: str = ""):
     connection = _connection_or_500()
     cursor = connection.cursor(cursor_factory=RealDictCursor)
 
     try:
         _ensure_customer_extra_columns(cursor)
+        params = []
+        where = ""
+        if q:
+            params = [f"%{q}%", f"%{q}%", f"%{q}%", f"%{q}%", f"%{q}%"]
+            where = """
+            WHERE
+                customer_code ILIKE %s OR
+                customer_name ILIKE %s OR
+                COALESCE(mobile, '') ILIKE %s OR
+                COALESCE(email, '') ILIKE %s OR
+                COALESCE(gstin, '') ILIKE %s
+            """
         cursor.execute(
             """
             SELECT
@@ -130,8 +142,10 @@ def list_customers():
                 form_data,
                 created_at
             FROM customers
+            """ + where + """
             ORDER BY id DESC
-            """
+            """,
+            tuple(params),
         )
         return cursor.fetchall()
     except Exception as exc:

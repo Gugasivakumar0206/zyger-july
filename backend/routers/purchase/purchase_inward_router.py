@@ -1,9 +1,9 @@
 from decimal import Decimal
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from psycopg2.extras import RealDictCursor
+from psycopg2.extras import Json, RealDictCursor
 
 from database.db_connection import get_connection
 
@@ -33,6 +33,19 @@ class PurchaseInwardPayload(BaseModel):
     customerId: Optional[int] = None
     invoiceNo: Optional[str] = None
     vehicleNo: Optional[str] = None
+    inwardTypeLabel: Optional[str] = None
+    referenceType: Optional[str] = None
+    referenceNumber: Optional[str] = None
+    salesOrder: Optional[str] = None
+    vehicleTrackNo: Optional[str] = None
+    weighmentNo: Optional[str] = None
+    emptyWeight: Optional[str] = None
+    totalWeight: Optional[str] = None
+    netWeight: Optional[str] = None
+    materialReceiver: Optional[str] = None
+    indentNo: Optional[str] = None
+    visibleTo: Optional[str] = None
+    extraData: Optional[dict[str, Any]] = None
     remarks: Optional[str] = None
     itemId: int
     qty: str
@@ -51,6 +64,12 @@ def _ensure_inward_type_column(cursor):
         """
         ALTER TABLE purchase_inward
         ADD COLUMN IF NOT EXISTS inward_type VARCHAR(30) DEFAULT 'GRN'
+        """
+    )
+    cursor.execute(
+        """
+        ALTER TABLE purchase_inward
+        ADD COLUMN IF NOT EXISTS extra_data JSONB DEFAULT '{}'::JSONB
         """
     )
 
@@ -249,6 +268,7 @@ def list_purchase_inwards(inward_type: Optional[str] = None):
                 pi.inward_date,
                 pi.invoice_no,
                 pi.vehicle_no,
+                pi.extra_data,
                 pi.status,
                 pi.created_at,
                 s.id AS supplier_id,
@@ -319,9 +339,9 @@ def create_purchase_inward(payload: PurchaseInwardPayload):
             """
             INSERT INTO purchase_inward (
                 inward_type, inward_no, inward_date, supplier_id, customer_id,
-                invoice_no, vehicle_no, remarks, status
+                invoice_no, vehicle_no, remarks, extra_data, status
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'Posted')
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'Posted')
             RETURNING id, inward_type, inward_no, inward_date, status
             """,
             (
@@ -333,6 +353,20 @@ def create_purchase_inward(payload: PurchaseInwardPayload):
                 data["invoiceNo"],
                 data["vehicleNo"],
                 data["remarks"],
+                Json(data.get("extraData") or {
+                    "inwardTypeLabel": data.get("inwardTypeLabel"),
+                    "referenceType": data.get("referenceType"),
+                    "referenceNumber": data.get("referenceNumber"),
+                    "salesOrder": data.get("salesOrder"),
+                    "vehicleTrackNo": data.get("vehicleTrackNo"),
+                    "weighmentNo": data.get("weighmentNo"),
+                    "emptyWeight": data.get("emptyWeight"),
+                    "totalWeight": data.get("totalWeight"),
+                    "netWeight": data.get("netWeight"),
+                    "materialReceiver": data.get("materialReceiver"),
+                    "indentNo": data.get("indentNo"),
+                    "visibleTo": data.get("visibleTo"),
+                }),
             ),
         )
         purchase = cursor.fetchone()

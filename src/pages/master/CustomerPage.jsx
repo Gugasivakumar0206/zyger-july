@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Users, MapPin, FileText, CreditCard, Phone, Save, Home, Plus, Trash2 } from 'lucide-react'
 import { createCustomer, getCustomerById, getCustomers, getNextCustomerNumber, updateCustomer } from '../../lib/api'
 
@@ -132,6 +132,7 @@ function AddRowBtn({ label, onClick }) {
 /* â”€â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export default function CustomerCreationPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { id } = useParams()
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -203,6 +204,23 @@ export default function CustomerCreationPage() {
 
     loadNextCustomerCode()
   }, [id])
+
+  useEffect(() => {
+    if (id || !location.state?.crmLead) return
+    const lead = location.state.crmLead
+    setForm((current) => ({
+      ...current,
+      customerName: lead.company_name || lead.customer_name || current.customerName,
+      printName: lead.company_name || lead.customer_name || current.printName,
+      mobile: lead.phone || current.mobile,
+      phone: lead.phone || current.phone,
+      email: lead.email || current.email,
+      customerType: current.customerType || 'CRM Lead',
+      customerGroup: current.customerGroup || 'CRM',
+      status: 'Active',
+    }))
+    setContacts([{ name: lead.contact_person || '', designation: '', mobile: lead.phone || '', email: lead.email || '' }])
+  }, [id, location.state])
 
   useEffect(() => {
     if (!id) return

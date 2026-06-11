@@ -1,7 +1,8 @@
 import {
-  LayoutDashboard, Package, BarChart3, Settings, Beaker, Wrench,
+  LayoutDashboard, Package, BarChart3, Settings, Wrench,
   Building2, BookOpen, ShoppingCart, TrendingUp, Hammer,
-  AlertTriangle, Users, Truck, PhoneCall, Target, Send, Megaphone,
+  Users, Truck, PhoneCall, Target, Send, Megaphone,
+  ClipboardList, Factory, FileStack, GitBranch,
 } from 'lucide-react'
 
 export const NAV_MENU = [
@@ -19,12 +20,19 @@ export const NAV_MENU = [
             label: 'Items',
             path: '/inventory/items',
             children: [
-              { label: 'Purchase Item', path: '/inventory/items/purchase' },
+              { label: 'Purchasable Item', path: '/inventory/items/purchase' },
               { label: 'Customer Supplied', path: '/inventory/items/customer-supplied' },
               { label: 'Manufacturing Item', path: '/inventory/items/manufacturing' },
             ],
           },
-          { label: 'Stock', path: '/reports/inventory' },
+          { label: 'Bill of Material (BOM)', icon: FileStack, path: '/process/bom' },
+          {
+            label: 'Configurations',
+            children: [
+              { label: 'Process', path: '/master/process' },
+              { label: 'Process Group', path: '/master/process-group' },
+            ],
+          },
           { label: 'Item Group', path: '/quality/item-group' },
         ],
       },
@@ -63,14 +71,6 @@ export const NAV_MENU = [
   },
 
   {
-    label: 'Quality',
-    icon: Beaker,
-    children: [
-      { label: 'Inward Inspection', path: '/quality/inward-inspection' },
-    ],
-  },
-
-  {
     label: 'CRM',
     icon: Target,
     children: [
@@ -88,6 +88,7 @@ export const NAV_MENU = [
     label: 'Sales',
     icon: TrendingUp,
     children: [
+      { label: 'Sales Order (SO)', path: '/process/so' },
       { label: 'Sales DC', path: '/sales/dc' },
       { label: 'Tax Invoice', path: '/invoice/tax' },
       { label: 'Sale Invoice', path: '/invoice/sale' },
@@ -95,33 +96,15 @@ export const NAV_MENU = [
   },
 
   {
-    label: 'Sub Contractor',
-    icon: Hammer,
-    children: [
-      { label: 'Subcontractor DC', path: '/subcontractor/dc' },
-    ],
-  },
-
-  {
-    label: 'Inventory',
-    icon: Package,
-    children: [
-      {
-        label: 'Inward',
-        path: '/inventory/inward',
-        children: [
-          { label: 'PO Inward', path: '/inventory/inward/po' },
-          { label: 'LO Inward', path: '/inventory/inward/lo' },
-          { label: 'JO Inward', path: '/inventory/inward/jo' },
-        ],
-      },
-    ],
-  },
-
-  {
     label: 'Purchase',
     icon: ShoppingCart,
     children: [
+      {
+        label: 'Purchase Order (PO)',
+        path: '/process/po',
+      },
+      { label: 'PO Schedule', path: '/process/po/schedule' },
+      { label: 'Purchase Request (PR)', path: '/process/pr' },
       {
         label: 'Job Work',
         children: [
@@ -133,14 +116,76 @@ export const NAV_MENU = [
   },
 
   {
-    label: 'Reports',
-    icon: BarChart3,
+    label: 'Inventory',
+    icon: Package,
     children: [
-      { label: 'Stock Report', icon: Package, path: '/reports/inventory' },
-      { label: 'Rejection Report', icon: AlertTriangle, path: '/rejection' },
-      { label: 'Reports', icon: BarChart3, path: '/reports' },
+      {
+        label: 'Inward Process',
+        path: '/inventory/inward-process',
+        children: [
+          { label: 'Inward List', path: '/inventory/inward-process' },
+          { label: 'Create Inward', path: '/inventory/inward-process/new' },
+          { label: 'Inward Inspection List', path: '/quality/inward-inspection' },
+          { label: 'Create Inward Inspection', path: '/quality/inward-inspection/new' },
+          { label: 'Customer Job Work', path: '/inventory/inward/jo' },
+          { label: 'Inward Adjustment', path: '/inventory/inward-adjustment' },
+        ],
+      },
+      {
+        label: 'Inward Types',
+        path: '/inventory/inward',
+        children: [
+          { label: 'PO Inward', path: '/inventory/inward/po' },
+          { label: 'LO Inward', path: '/inventory/inward/lo' },
+          { label: 'JO Inward', path: '/inventory/inward/jo' },
+        ],
+      },
+      {
+        label: 'Stores DC',
+        path: '/process/general-dc',
+        children: [
+          { label: 'General DC List', path: '/process/general-dc' },
+          { label: 'Create General DC', path: '/process/general-dc/new' },
+          { label: 'Issue Against Receipt (IAR)', path: '/process/iar' },
+          { label: 'Received Against Issue (RAI)', path: '/process/rai' },
+          { label: 'JO Inward', path: '/process/jo-inward' },
+          { label: 'Supplier Invoice', path: '/process/supplier-invoice' },
+        ],
+      },
+      { label: 'Raw Material Issue', path: '/process/raw-material-issue' },
+      { label: 'Stock', icon: Package, path: '/reports/inventory' },
     ],
   },
 
-  { label: 'Settings', icon: Settings, path: '/settings' },
+  {
+    label: 'Production',
+    icon: Factory,
+    children: [
+      { label: 'Work Order (WO)', icon: GitBranch, path: '/process/wo' },
+      { label: 'Bill of Material (BOM)', icon: FileStack, path: '/process/bom' },
+      { label: 'Material Requirement Planning (MRP)', icon: ClipboardList, path: '/process/mrp' },
+      { label: 'Production Entry', icon: Factory, path: '/process/production' },
+      { label: 'Finished Goods Stock', icon: Package, path: '/process/fg-stock' },
+    ],
+  },
+
+  {
+    label: 'Sub Contractor',
+    icon: Hammer,
+    children: [
+      { label: 'SubContractor Master', path: '/subcontractor' },
+      { label: 'Create SubContractor', path: '/subcontractor/new' },
+      { label: 'Subcontractor DC List', path: '/subcontractor/dc' },
+      { label: 'Create Subcontractor DC', path: '/subcontractor/dc/new' },
+    ],
+  },
+
+  {
+    label: 'Settings',
+    icon: Settings,
+    children: [
+      { label: 'Settings', path: '/settings' },
+      { label: 'ERP Process Flow', icon: GitBranch, path: '/process-flow' },
+    ],
+  },
 ]

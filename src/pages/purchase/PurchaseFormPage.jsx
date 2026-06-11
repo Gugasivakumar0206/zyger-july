@@ -33,6 +33,18 @@ export default function PurchaseFormPage({
   const [form, setForm] = useState({
     inwardNo: '',
     inwardDate: todayValue(),
+    inwardTypeLabel: '',
+    referenceType: '',
+    referenceNumber: '',
+    salesOrder: '',
+    vehicleTrackNo: '',
+    weighmentNo: '',
+    emptyWeight: '',
+    totalWeight: '',
+    netWeight: '',
+    materialReceiver: '',
+    indentNo: '',
+    visibleTo: '',
     supplierId: '',
     customerId: '',
     invoiceNo: '',
@@ -153,6 +165,18 @@ export default function PurchaseFormPage({
         inwardType,
         inwardNo: form.inwardNo,
         inwardDate: form.inwardDate,
+        inwardTypeLabel: form.inwardTypeLabel,
+        referenceType: form.referenceType,
+        referenceNumber: form.referenceNumber,
+        salesOrder: form.salesOrder,
+        vehicleTrackNo: form.vehicleTrackNo,
+        weighmentNo: form.weighmentNo,
+        emptyWeight: form.emptyWeight,
+        totalWeight: form.totalWeight,
+        netWeight: form.netWeight,
+        materialReceiver: form.materialReceiver,
+        indentNo: form.indentNo,
+        visibleTo: form.visibleTo,
         supplierId: form.supplierId ? Number(form.supplierId) : null,
         customerId: showCustomerField && form.customerId ? Number(form.customerId) : null,
         invoiceNo: form.invoiceNo,
@@ -166,6 +190,18 @@ export default function PurchaseFormPage({
       setForm({
         inwardNo: '',
         inwardDate: todayValue(),
+        inwardTypeLabel: '',
+        referenceType: '',
+        referenceNumber: '',
+        salesOrder: '',
+        vehicleTrackNo: '',
+        weighmentNo: '',
+        emptyWeight: '',
+        totalWeight: '',
+        netWeight: '',
+        materialReceiver: '',
+        indentNo: '',
+        visibleTo: '',
         supplierId: '',
         customerId: '',
         invoiceNo: '',
@@ -209,10 +245,22 @@ export default function PurchaseFormPage({
         </div>
       )}
 
-      <SectionCard title={`${title} Header`} defaultOpen>
-        <FormGrid cols={3}>
+      <SectionCard title="Inward Information" defaultOpen>
+        <FormGrid cols={2}>
+          <SelectDropdown label="Inward Type" required value={form.inwardTypeLabel} onChange={(e) => updateField('inwardTypeLabel', e.target.value)} options={['PO Inward', 'LO Inward', 'JO Inward', 'Customer Job Work', 'General Inward']} placeholder="Please Select" />
           <FormInput label="Inward No" required value={form.inwardNo} onChange={(e) => updateField('inwardNo', e.target.value)} placeholder={`${numberPrefix}-0001`} />
           <FormInput label="Inward Date" required type="date" value={form.inwardDate} onChange={(e) => updateField('inwardDate', e.target.value)} />
+          <FormInput label="Vehicle Track No" value={form.vehicleTrackNo} onChange={(e) => updateField('vehicleTrackNo', e.target.value)} placeholder="Please Select / Track No" />
+          <SelectDropdown label="Reference Type" required value={form.referenceType} onChange={(e) => updateField('referenceType', e.target.value)} options={['Sales Order', 'Purchase Order', 'Job Work', 'Manual', 'Return']} placeholder="Please Select" />
+          <FormInput label="Reference Number" value={form.referenceNumber} onChange={(e) => updateField('referenceNumber', e.target.value)} />
+          <FormInput label="Sales Order" value={form.salesOrder} onChange={(e) => updateField('salesOrder', e.target.value)} placeholder="Please Select" />
+          <FormInput label="Weighment Number" value={form.weighmentNo} onChange={(e) => updateField('weighmentNo', e.target.value)} placeholder="Enter Weighment No" />
+          <FormInput label="Empty Weight" type="number" value={form.emptyWeight} onChange={(e) => updateField('emptyWeight', e.target.value)} placeholder="Enter Empty Weight" />
+          <FormInput label="Total Weight" type="number" value={form.totalWeight} onChange={(e) => updateField('totalWeight', e.target.value)} placeholder="Enter Total Weight" />
+          <FormInput label="Net Weight" type="number" value={form.netWeight} onChange={(e) => updateField('netWeight', e.target.value)} placeholder="Enter Net Weight" />
+          <FormInput label="Material Receiver" value={form.materialReceiver} onChange={(e) => updateField('materialReceiver', e.target.value)} placeholder="Employee Name" />
+          <FormInput label="Indent No." value={form.indentNo} onChange={(e) => updateField('indentNo', e.target.value)} />
+          <FormInput label="Visible To" value={form.visibleTo} onChange={(e) => updateField('visibleTo', e.target.value)} placeholder="Please Select" />
           <SelectDropdown label="Supplier" required={supplierRequired} value={form.supplierId} onChange={(e) => updateField('supplierId', e.target.value)} options={supplierOptions} placeholder={supplierRequired ? 'Select supplier' : 'Select supplier (optional)'} />
           {showCustomerField && (
             <SelectDropdown label={customerRequired ? 'Customer' : 'Customer (Optional)'} required={customerRequired} value={form.customerId} onChange={(e) => updateField('customerId', e.target.value)} options={customerOptions} placeholder="Select customer" />
@@ -240,7 +288,7 @@ export default function PurchaseFormPage({
       </SectionCard>
 
       <SectionCard title="Item and Quantity" defaultOpen>
-        <FormGrid cols={3}>
+        <FormGrid cols={2}>
           <SelectDropdown label="Item" required value={form.itemId} onChange={(e) => updateField('itemId', e.target.value)} options={itemOptions} placeholder="Select item" />
           <FormInput label="Qty" required type="number" min="0" step="0.01" value={form.qty} onChange={(e) => updateField('qty', e.target.value)} placeholder="0.00" />
           <FormInput label="Rate" type="number" min="0" step="0.01" value={form.rate} onChange={(e) => updateField('rate', e.target.value)} placeholder="0.00" />
