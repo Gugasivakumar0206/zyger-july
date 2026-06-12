@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ActionButtons, FormGrid, FormInput, PageContainer, SectionCard, SelectDropdown, Textarea } from '../../components/ui/index'
-import { createPurchaseInward, getCustomers, getItems, getNextPurchaseInwardNumber, getPurchaseInvoiceNos, getSuppliers } from '../../lib/api'
+import { createPurchaseInward, getCustomers, getItems, getNextPurchaseInwardNumber, getPurchaseInvoiceNos, getStores, getSuppliers } from '../../lib/api'
 
 function todayValue() {
   return new Date().toISOString().slice(0, 10)
@@ -24,6 +24,7 @@ export default function PurchaseFormPage({
   const [suppliers, setSuppliers] = useState([])
   const [customers, setCustomers] = useState([])
   const [items, setItems] = useState([])
+  const [stores, setStores] = useState([])
   const [invoiceSuggestions, setInvoiceSuggestions] = useState([])
   const showCustomerField = inwardType !== 'PO'
   const isLoInward = inwardType === 'LO'
@@ -49,6 +50,7 @@ export default function PurchaseFormPage({
     customerId: '',
     invoiceNo: '',
     vehicleNo: '',
+    location: '',
     itemId: '',
     qty: '',
     rate: '',
@@ -60,14 +62,16 @@ export default function PurchaseFormPage({
       try {
         setBootLoading(true)
         setError('')
-        const [supplierResult, customerResult, itemResult] = await Promise.all([
+        const [supplierResult, customerResult, itemResult, storeResult] = await Promise.all([
           getSuppliers(),
           getCustomers(),
           getItems(),
+          getStores(),
         ])
         setSuppliers(supplierResult)
         setCustomers(customerResult)
         setItems(itemResult)
+        setStores(Array.isArray(storeResult) ? storeResult.filter((store) => store.isActive !== false) : [])
       } catch (loadError) {
         setError(loadError.message || 'Unable to load purchase master data.')
       } finally {
@@ -142,6 +146,15 @@ export default function PurchaseFormPage({
     [items]
   )
 
+  const storeOptions = useMemo(
+    () =>
+      stores.map((store) => ({
+        value: store.storeName,
+        label: [store.storeCode, store.storeName, store.location].filter(Boolean).join(' - '),
+      })),
+    [stores]
+  )
+
   const selectedItem = items.find((item) => String(item.id) === form.itemId)
   const computedAmount =
     form.qty && form.rate ? (Number(form.qty || 0) * Number(form.rate || 0)).toFixed(2) : '0.00'
@@ -151,9 +164,9 @@ export default function PurchaseFormPage({
   }
 
   async function handleSave() {
-    if (!form.inwardNo || !form.itemId || !form.qty || (supplierRequired && !form.supplierId) || (customerRequired && !form.customerId)) {
+    if (!form.inwardNo || !form.itemId || !form.qty || !form.location || (supplierRequired && !form.supplierId) || (customerRequired && !form.customerId)) {
       setSuccess('')
-      setError(isLoInward ? 'Inward No, Customer, Item, and Qty are required for LO inward.' : 'Inward No, Supplier, Item, and Qty are required.')
+      setError(isLoInward ? 'Inward No, Customer, Item, Qty, and Location are required for LO inward.' : 'Inward No, Supplier, Item, Qty, and Location are required.')
       return
     }
 
@@ -181,12 +194,13 @@ export default function PurchaseFormPage({
         customerId: showCustomerField && form.customerId ? Number(form.customerId) : null,
         invoiceNo: form.invoiceNo,
         vehicleNo: form.vehicleNo,
+        location: form.location,
         itemId: Number(form.itemId),
         qty: form.qty,
         rate: form.rate || '0',
         remarks: form.remarks,
       })
-      setSuccess(`${title} saved. ID: ${result.purchase?.id ?? '-'} | New Stock: ${result.stock?.new_balance ?? '-'}`)
+      setSuccess(`${title} saved. ID: ${result.purchase?.id ?? '-'} | Stock status: Pending Inspection`)
       setForm({
         inwardNo: '',
         inwardDate: todayValue(),
@@ -206,6 +220,7 @@ export default function PurchaseFormPage({
         customerId: '',
         invoiceNo: '',
         vehicleNo: '',
+        location: '',
         itemId: '',
         qty: '',
         rate: '',
@@ -281,6 +296,7 @@ export default function PurchaseFormPage({
             </datalist>
           </div>
           <FormInput label="Vehicle No" value={form.vehicleNo} onChange={(e) => updateField('vehicleNo', e.target.value)} placeholder="TN-00-AB-1234" />
+          <SelectDropdown label="Store / Location" required value={form.location} onChange={(e) => updateField('location', e.target.value)} options={storeOptions} placeholder="Select store location" />
         </FormGrid>
         <div style={{ marginTop: '10px', fontSize: '12px', color: '#64748b', fontWeight: '600' }}>
           Supplier Invoice field shows matching invoice numbers already saved in the database while typing.

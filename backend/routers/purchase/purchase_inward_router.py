@@ -45,6 +45,7 @@ class PurchaseInwardPayload(BaseModel):
     materialReceiver: Optional[str] = None
     indentNo: Optional[str] = None
     visibleTo: Optional[str] = None
+    location: Optional[str] = None
     extraData: Optional[dict[str, Any]] = None
     remarks: Optional[str] = None
     itemId: int
@@ -90,7 +91,7 @@ def _ensure_type_wise_inward_tables(cursor):
                 invoice_no VARCHAR(100),
                 vehicle_no VARCHAR(100),
                 remarks TEXT,
-                status VARCHAR(50) DEFAULT 'Posted',
+                status VARCHAR(50) DEFAULT 'Pending Inspection',
                 total_qty NUMERIC(14,3) DEFAULT 0,
                 total_amount NUMERIC(14,2) DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -341,7 +342,7 @@ def create_purchase_inward(payload: PurchaseInwardPayload):
                 inward_type, inward_no, inward_date, supplier_id, customer_id,
                 invoice_no, vehicle_no, remarks, extra_data, status
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'Posted')
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'Pending Inspection')
             RETURNING id, inward_type, inward_no, inward_date, status
             """,
             (
@@ -366,6 +367,7 @@ def create_purchase_inward(payload: PurchaseInwardPayload):
                     "materialReceiver": data.get("materialReceiver"),
                     "indentNo": data.get("indentNo"),
                     "visibleTo": data.get("visibleTo"),
+                    "location": data.get("location"),
                 }),
             ),
         )
@@ -382,38 +384,6 @@ def create_purchase_inward(payload: PurchaseInwardPayload):
             (purchase["id"], data["itemId"], qty, rate, amount),
         )
         line = cursor.fetchone()
-
-        cursor.execute(
-            """
-            SELECT balance_qty
-            FROM stock_ledger
-            WHERE item_id = %s
-            ORDER BY id DESC
-            LIMIT 1
-            """,
-            (data["itemId"],),
-        )
-        last_entry = cursor.fetchone()
-        previous_balance = Decimal(str(last_entry["balance_qty"])) if last_entry else Decimal("0")
-        new_balance = previous_balance + qty
-
-        cursor.execute(
-            """
-            INSERT INTO stock_ledger (
-                item_id, ref_type, ref_id, inward_qty, outward_qty, balance_qty, remarks
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """,
-            (
-                data["itemId"],
-                f"PURCHASE_INWARD_{inward_type.replace(' ', '_')}",
-                purchase["id"],
-                qty,
-                Decimal("0"),
-                new_balance,
-                data["remarks"] or f"Inward {data['inwardNo']}",
-            ),
-        )
 
         _sync_type_wise_inward_storage(
             cursor,
@@ -438,8 +408,8 @@ def create_purchase_inward(payload: PurchaseInwardPayload):
                 "amount": str(amount),
             },
             "stock": {
-                "previous_balance": str(previous_balance),
-                "new_balance": str(new_balance),
+                "posted": False,
+                "status": "Pending Inspection",
             },
         }
     except HTTPException:

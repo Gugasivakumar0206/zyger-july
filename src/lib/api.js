@@ -304,6 +304,17 @@ export function getRacks() {
   return request('/maintenance/racks')
 }
 
+export function getStores() {
+  return request('/maintenance/stores')
+}
+
+export function createStore(payload) {
+  return request('/maintenance/stores', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
 export function createRack(payload) {
   return request('/maintenance/racks', {
     method: 'POST',

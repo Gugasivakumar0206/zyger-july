@@ -152,6 +152,12 @@ def _ensure_quality_tables(cursor):
         ADD COLUMN IF NOT EXISTS ref_type VARCHAR(50)
         """
     )
+    cursor.execute(
+        """
+        ALTER TABLE stock_ledger
+        ADD COLUMN IF NOT EXISTS location VARCHAR(150)
+        """
+    )
 
 
 def _next_inspection_no(cursor):
@@ -207,6 +213,7 @@ def _fetch_source_headers(cursor, inward_type: str):
             pi.inward_date,
             pi.invoice_no,
             pi.inward_type,
+            pi.extra_data,
             COALESCE(s.supplier_name, c.customer_name, '-') AS company_name
         FROM purchase_inward pi
         LEFT JOIN suppliers s ON s.id = pi.supplier_id
@@ -230,6 +237,7 @@ def _fetch_source_detail(cursor, purchase_inward_id: int):
             pi.inward_date,
             pi.invoice_no,
             pi.inward_type,
+            pi.extra_data,
             COALESCE(s.supplier_name, c.customer_name, '-') AS company_name
         FROM purchase_inward pi
         LEFT JOIN suppliers s ON s.id = pi.supplier_id
@@ -570,6 +578,8 @@ def create_inward_inspection(payload: InwardInspectionPayload):
 
             if accepted_qty < 0:
                 raise HTTPException(status_code=400, detail="Accepted quantity cannot be negative")
+            if (accepted_qty > 0 or rejected_qty > 0 or rework_qty > 0) and not str(row.location or "").strip():
+                raise HTTPException(status_code=400, detail="Store / location is required for every inspected item")
 
             total_qty += received_qty
             total_accepted_qty += accepted_qty
@@ -652,7 +662,7 @@ def create_inward_inspection(payload: InwardInspectionPayload):
                 ),
             )
 
-            if row["rejected_qty"] > 0:
+            if row["accepted_qty"] > 0:
                 cursor.execute(
                     """
                     SELECT balance_qty
@@ -665,25 +675,35 @@ def create_inward_inspection(payload: InwardInspectionPayload):
                 )
                 balance_row = cursor.fetchone()
                 previous_balance = _decimal(balance_row["balance_qty"]) if balance_row else Decimal("0")
-                new_balance = previous_balance - row["rejected_qty"]
+                new_balance = previous_balance + row["accepted_qty"]
 
                 cursor.execute(
                     """
                     INSERT INTO stock_ledger (
-                        item_id, ref_type, ref_id, inward_qty, outward_qty, balance_qty, remarks
+                        item_id, ref_type, ref_id, inward_qty, outward_qty, balance_qty, remarks, location
                     )
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
                         row["item_id"],
-                        "QUALITY_INWARD_REJECTION",
+                        "QUALITY_INWARD_ACCEPTED",
                         created["id"],
+                        row["accepted_qty"],
                         Decimal("0"),
-                        row["rejected_qty"],
                         new_balance,
-                        f"Rejected qty from {inspection_no}",
+                        f"Accepted qty from completed inspection {inspection_no}",
+                        row["location"],
                     ),
                 )
+
+        cursor.execute(
+            """
+            UPDATE purchase_inward
+            SET status = 'Inspection Completed'
+            WHERE id = %s
+            """,
+            (payload.purchase_inward_id,),
+        )
 
         connection.commit()
         return {

@@ -38,6 +38,24 @@ services:
     ports:
       - "127.0.0.1:${BACKEND_HOST_PORT:-8000}:8000"
 
+  demo-seed:
+    build:
+      context: ./backend
+    profiles:
+      - seed
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ${POSTGRES_DB:-ar_precision_erp}
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      AUTH_SECRET_KEY: ${AUTH_SECRET_KEY}
+    command: ["python", "seed_demo_data.py"]
+    restart: "no"
+
   frontend:
     build:
       context: .

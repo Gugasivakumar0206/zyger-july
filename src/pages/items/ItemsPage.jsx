@@ -34,7 +34,7 @@ export default function ItemsPage() {
             printName: item.print_name,
             itemGroup: item.item_group,
             stockUOM: item.uom,
-            location: item.rack || item.bin || '-',
+            location: [item.location, item.rack, item.bin].filter(Boolean).join(' / ') || '-',
             purchaseRate: item.purchase_rate ?? 0,
             sellingRate: item.sales_rate ?? 0,
             status: item.status || 'Active',

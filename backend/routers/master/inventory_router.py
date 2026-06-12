@@ -71,6 +71,12 @@ def _ensure_item_type_column(cursor):
         ADD COLUMN IF NOT EXISTS inspection_required BOOLEAN DEFAULT FALSE
         """
     )
+    cursor.execute(
+        """
+        ALTER TABLE items
+        ADD COLUMN IF NOT EXISTS location VARCHAR(150)
+        """
+    )
 
 
 @router.get("/next-number")
@@ -130,6 +136,7 @@ def list_items(item_type: Optional[str] = None):
                 item_group,
                 uom,
                 hsn_code,
+                location,
                 rack,
                 bin,
                 min_stock,
@@ -190,12 +197,12 @@ def create_item(payload: ItemPayload):
             """
             INSERT INTO items (
                 item_type, item_code, item_name, print_name, item_group, uom, hsn_code,
-                rack, bin, min_stock, max_stock, reorder_level,
+                location, rack, bin, min_stock, max_stock, reorder_level,
                 purchase_rate, sales_rate, gst_percent, inspection_required, engineering_document_name, engineering_document_data, status
             )
             VALUES (
                 %s,%s,%s,%s,%s,%s,%s,
-                %s,%s,%s,%s,%s,
+                %s,%s,%s,%s,%s,%s,
                 %s,%s,%s,%s,%s,%s,%s
             )
             RETURNING id, item_type, item_code, item_name
@@ -208,6 +215,7 @@ def create_item(payload: ItemPayload):
                 data["itemGroup"],
                 data["stockUOM"],
                 data["hsnCode"],
+                data["location"],
                 data["rack"],
                 data["bin"],
                 data["minStock"] or None,
@@ -264,6 +272,7 @@ def update_item(item_id: int, payload: ItemPayload):
                 item_group = %s,
                 uom = %s,
                 hsn_code = %s,
+                location = %s,
                 rack = %s,
                 bin = %s,
                 min_stock = %s,
@@ -288,6 +297,7 @@ def update_item(item_id: int, payload: ItemPayload):
                 data["itemGroup"],
                 data["stockUOM"],
                 data["hsnCode"],
+                data["location"],
                 data["rack"],
                 data["bin"],
                 data["minStock"] or None,

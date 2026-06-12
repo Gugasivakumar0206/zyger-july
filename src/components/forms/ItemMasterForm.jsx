@@ -1,6 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { createItem, deleteItem, getItemById, getItemGroups, getNextItemNumber, getProcessMasterRecords, updateItem } from '../../lib/api'
+import {
+  createItem,
+  deleteItem,
+  getBins,
+  getItemById,
+  getItemGroups,
+  getNextItemNumber,
+  getProcessMasterRecords,
+  getRacks,
+  getStores,
+  updateItem,
+} from '../../lib/api'
 import {
   SectionCard, FormGrid, FormInput, NumberInput, SelectDropdown,
   Textarea, Checkbox, DatePicker, ImageUploader,
@@ -144,6 +155,9 @@ export default function ItemMasterForm({
   const [catalogs, setCatalogs] = useState([])
   const [processGroups, setProcessGroups] = useState([])
   const [processes, setProcesses] = useState([])
+  const [stores, setStores] = useState([])
+  const [racks, setRacks] = useState([])
+  const [bins, setBins] = useState([])
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }))
   const bind = (key) => ({ value: form[key] ?? '', onChange: e => set(key, e.target.value) })
   const bindCheck = (key) => ({ checked: !!form[key], onChange: v => set(key, v) })
@@ -153,25 +167,42 @@ export default function ItemMasterForm({
     const groupType = toDbItemType(group.group_type || PURCHASE_DB_TYPE)
     return groupType === selectedGroupType
   })
+  const selectedStore = stores.find(store => store.storeName === form.location)
+  const filteredRacks = racks.filter(rack => (
+    !selectedStore || String(rack.storeId || '') === String(selectedStore.id)
+  ))
+  const selectedRack = racks.find(rack => rack.rackName === form.rack)
+  const filteredBins = bins.filter(bin => (
+    !selectedRack || String(bin.rackId || '') === String(selectedRack.id)
+  ))
 
   useEffect(() => {
     async function loadItemGroups() {
       try {
-        const [result, catalogRows, processGroupRows, processRows] = await Promise.all([
+        const [result, catalogRows, processGroupRows, processRows, storeRows, rackRows, binRows] = await Promise.all([
           getItemGroups(),
           getProcessMasterRecords('item-catalog').catch(() => []),
           getProcessMasterRecords('process-group').catch(() => []),
           getProcessMasterRecords('process').catch(() => []),
+          getStores().catch(() => []),
+          getRacks().catch(() => []),
+          getBins().catch(() => []),
         ])
         setItemGroups((result || []).filter((group) => group.is_active !== false))
         setCatalogs(catalogRows || [])
         setProcessGroups(processGroupRows || [])
         setProcesses(processRows || [])
+        setStores((storeRows || []).filter(row => row.isActive !== false))
+        setRacks((rackRows || []).filter(row => row.isActive !== false))
+        setBins((binRows || []).filter(row => row.isActive !== false))
       } catch {
         setItemGroups([])
         setCatalogs([])
         setProcessGroups([])
         setProcesses([])
+        setStores([])
+        setRacks([])
+        setBins([])
       }
     }
 
@@ -235,6 +266,7 @@ export default function ItemMasterForm({
           itemGroup: item.item_group || '',
           stockUOM: item.uom || '',
           hsnCode: item.hsn_code || '',
+          location: item.location || item.form_data?.location || '',
           rack: item.rack || '',
           bin: item.bin || '',
           minStock: item.min_stock || '',
@@ -287,6 +319,9 @@ export default function ItemMasterForm({
     setSaveSuccess('')
 
     try {
+      const normalizedForm = isPurchasableItem
+        ? { ...form, processGroup: '', salablePrice: '' }
+        : form
       const payload = {
         itemType: toDbItemType(form.itemType || form.groupType || PURCHASE_DB_TYPE),
         itemCode: form.itemCode,
@@ -307,7 +342,7 @@ export default function ItemMasterForm({
         inspectionRequired: !!form.inspectionRequired,
         engineeringDocumentName: form.engineeringDocumentName,
         engineeringDocumentData: form.engineeringDocumentData,
-        formData: form,
+        formData: normalizedForm,
         status: form.status || 'Active',
       }
       const result = initialData.id
@@ -442,13 +477,17 @@ export default function ItemMasterForm({
             <SelectDropdown label="Item Catalog"
               options={catalogs.map((catalog) => catalog.name)}
               {...bind('itemCatalog')} />
-            <SelectDropdown label="Process Group"
-              options={processGroups.map((group) => group.name)}
-              {...bind('processGroup')} />
+            {!isPurchasableItem && (
+              <SelectDropdown label="Process Group"
+                options={processGroups.map((group) => group.name)}
+                {...bind('processGroup')} />
+            )}
             <SelectDropdown label="Formula"
               options={['Standard', 'Weight Based', 'Qty Based', 'Manual']}
               {...bind('formula')} />
-            <NumberInput label="Salable Price" {...bind('salablePrice')} placeholder="0.00" />
+            {!isPurchasableItem && (
+              <NumberInput label="Salable Price" {...bind('salablePrice')} placeholder="0.00" />
+            )}
             <NumberInput label="Manufacturing Cost" {...bind('manufacturingCost')} placeholder="0.00" />
             <SelectDropdown label="Primary Department"
               options={['Production', 'Purchase', 'Stores', 'Quality', 'Engineering', 'Maintenance']}
@@ -457,9 +496,44 @@ export default function ItemMasterForm({
             <SelectDropdown label="Amount Calculation Type"
               options={['Standard Cost', 'Actual Cost', 'FIFO', 'Weighted Average']}
               {...bind('amountCalculationType')} />
-            <SelectDropdown label="Location"
-              options={['MAIN', 'Store A', 'Store B', 'Store C', 'Warehouse']}
-              {...bind('location')} />
+            <SelectDropdown
+              label="Store / Location"
+              options={stores.map(store => ({
+                value: store.storeName,
+                label: `${store.storeCode} - ${store.storeName}${store.location ? ` (${store.location})` : ''}`,
+              }))}
+              value={form.location || ''}
+              onChange={event => setForm(current => ({
+                ...current,
+                location: event.target.value,
+                rack: '',
+                bin: '',
+              }))}
+            />
+            <SelectDropdown
+              label="Rack"
+              options={filteredRacks.map(rack => ({
+                value: rack.rackName,
+                label: `${rack.rackCode} - ${rack.rackName}`,
+              }))}
+              value={form.rack || ''}
+              onChange={event => setForm(current => ({
+                ...current,
+                rack: event.target.value,
+                bin: '',
+              }))}
+              disabled={!form.location}
+            />
+            <SelectDropdown
+              label="Bin"
+              options={filteredBins.map(bin => ({
+                value: bin.binName,
+                label: `${bin.binCode} - ${bin.binName}`,
+              }))}
+              value={form.bin || ''}
+              onChange={event => set('bin', event.target.value)}
+              disabled={!form.rack}
+            />
             <SelectDropdown label="Stock UOM"
               options={['NOS', 'Kg', 'Mtr', 'Ltr', 'Set', 'Box', 'Pcs', 'Roll', 'Sheet']}
               {...bind('stockUOM')} />
@@ -673,8 +747,6 @@ export default function ItemMasterForm({
               {...bind('materialName')} />
             <NumberInput label="Maximum Order Qty" {...bind('maxOrderQty')} placeholder="0" />
             <NumberInput label="Minimum Route Sheet Qty" {...bind('minRouteSheetQty')} placeholder="0" />
-            <FormInput label="Rack Name" {...bind('rackName')} />
-            <FormInput label="Bin Name" {...bind('binName')} />
             <FormInput label="Make Name" {...bind('makeName')} />
             <FormInput label="Model" {...bind('model')} />
             <FormInput label="Brand" {...bind('brand')} />
@@ -857,9 +929,9 @@ export default function ItemMasterForm({
         <SectionCard title="Division wise Location" icon={Grid} defaultOpen={false}>
           <InlineTable
             columns={[
-              { key: 'division', label: 'Division', type: 'select', options: ['MAIN', 'Division A', 'Division B'] },
-              { key: 'rack', label: 'Rack', type: 'select', options: ['--Select--', 'Rack A', 'Rack B', 'Rack C', 'Rack D'] },
-              { key: 'bin', label: 'Bin', type: 'select', options: ['--Select--', 'Bin 01', 'Bin 02', 'Bin 03', 'Bin 04'] },
+              { key: 'division', label: 'Store / Location', type: 'select', options: stores.map(store => store.storeName) },
+              { key: 'rack', label: 'Rack', type: 'select', options: racks.map(rack => rack.rackName) },
+              { key: 'bin', label: 'Bin', type: 'select', options: bins.map(bin => bin.binName) },
               { key: 'minStockCap', label: 'Minimum Stock/Capacity', type: 'number' },
               { key: 'rol', label: 'ROL', type: 'number' },
               { key: 'sequence', label: 'Sequence Order', type: 'number' },

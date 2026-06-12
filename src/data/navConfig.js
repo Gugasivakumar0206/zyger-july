@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, Package, BarChart3, Settings, Wrench,
+  LayoutDashboard, Package, BarChart3, Settings,
   Building2, BookOpen, ShoppingCart, TrendingUp, Hammer,
   Users, Truck, PhoneCall, Target, Send, Megaphone,
   ClipboardList, Factory, FileStack, GitBranch,
@@ -25,7 +25,8 @@ export const NAV_MENU = [
               { label: 'Manufacturing Item', path: '/inventory/items/manufacturing' },
             ],
           },
-          { label: 'Bill of Material (BOM)', icon: FileStack, path: '/process/bom' },
+          { label: 'Item Group Master', path: '/master/item-group' },
+          { label: 'Store Master', path: '/master/store' },
           {
             label: 'Configurations',
             children: [
@@ -33,7 +34,6 @@ export const NAV_MENU = [
               { label: 'Process Group', path: '/master/process-group' },
             ],
           },
-          { label: 'Item Group', path: '/quality/item-group' },
         ],
       },
       {
@@ -44,15 +44,12 @@ export const NAV_MENU = [
         ],
       },
       {
-        label: 'Maintenance',
-        icon: Wrench,
-        children: [
-          { label: 'Rack', path: '/maintenance/rack' },
-          { label: 'Bin', path: '/maintenance/bin' },
-        ],
+        label: 'Bill of Material (BOM)',
+        icon: FileStack,
+        path: '/process/bom',
       },
       {
-        label: 'Customer',
+        label: 'Customer List',
         icon: Users,
         path: '/master/customer/view',
       },
@@ -60,6 +57,11 @@ export const NAV_MENU = [
         label: 'Supplier',
         icon: Truck,
         path: '/master/supplier/view',
+      },
+      {
+        label: 'Subcontractor List',
+        icon: Hammer,
+        path: '/subcontractor',
       },
       {
         label: 'Users',
@@ -99,18 +101,8 @@ export const NAV_MENU = [
     label: 'Purchase',
     icon: ShoppingCart,
     children: [
-      {
-        label: 'Purchase Order (PO)',
-        path: '/process/po',
-      },
-      { label: 'PO Schedule', path: '/process/po/schedule' },
       { label: 'Purchase Request (PR)', path: '/process/pr' },
-      {
-        label: 'Job Work',
-        children: [
-          { label: 'JODC', path: '/purchase/jobwork/jodc' },
-        ],
-      },
+      { label: 'Purchase Order (PO)', path: '/process/po' },
       { label: 'Labour Invoice', path: '/purchase/labour-invoice' },
     ],
   },
@@ -120,18 +112,6 @@ export const NAV_MENU = [
     icon: Package,
     children: [
       {
-        label: 'Inward Process',
-        path: '/inventory/inward-process',
-        children: [
-          { label: 'Inward List', path: '/inventory/inward-process' },
-          { label: 'Create Inward', path: '/inventory/inward-process/new' },
-          { label: 'Inward Inspection List', path: '/quality/inward-inspection' },
-          { label: 'Create Inward Inspection', path: '/quality/inward-inspection/new' },
-          { label: 'Customer Job Work', path: '/inventory/inward/jo' },
-          { label: 'Inward Adjustment', path: '/inventory/inward-adjustment' },
-        ],
-      },
-      {
         label: 'Inward Types',
         path: '/inventory/inward',
         children: [
@@ -140,18 +120,7 @@ export const NAV_MENU = [
           { label: 'JO Inward', path: '/inventory/inward/jo' },
         ],
       },
-      {
-        label: 'Stores DC',
-        path: '/process/general-dc',
-        children: [
-          { label: 'General DC List', path: '/process/general-dc' },
-          { label: 'Create General DC', path: '/process/general-dc/new' },
-          { label: 'Issue Against Receipt (IAR)', path: '/process/iar' },
-          { label: 'Received Against Issue (RAI)', path: '/process/rai' },
-          { label: 'JO Inward', path: '/process/jo-inward' },
-          { label: 'Supplier Invoice', path: '/process/supplier-invoice' },
-        ],
-      },
+      { label: 'Inward Adjustment', path: '/inventory/inward-adjustment' },
       { label: 'Raw Material Issue', path: '/process/raw-material-issue' },
       { label: 'Stock', icon: Package, path: '/reports/inventory' },
     ],
@@ -162,10 +131,15 @@ export const NAV_MENU = [
     icon: Factory,
     children: [
       { label: 'Work Order (WO)', icon: GitBranch, path: '/process/wo' },
-      { label: 'Bill of Material (BOM)', icon: FileStack, path: '/process/bom' },
-      { label: 'Material Requirement Planning (MRP)', icon: ClipboardList, path: '/process/mrp' },
       { label: 'Production Entry', icon: Factory, path: '/process/production' },
-      { label: 'Finished Goods Stock', icon: Package, path: '/process/fg-stock' },
+    ],
+  },
+
+  {
+    label: 'Quality',
+    icon: ClipboardList,
+    children: [
+      { label: 'Inward Inspection', path: '/quality/inward-inspection' },
     ],
   },
 
@@ -173,10 +147,7 @@ export const NAV_MENU = [
     label: 'Sub Contractor',
     icon: Hammer,
     children: [
-      { label: 'SubContractor Master', path: '/subcontractor' },
-      { label: 'Create SubContractor', path: '/subcontractor/new' },
-      { label: 'Subcontractor DC List', path: '/subcontractor/dc' },
-      { label: 'Create Subcontractor DC', path: '/subcontractor/dc/new' },
+      { label: 'Subcontractor DC', path: '/subcontractor/dc' },
     ],
   },
 

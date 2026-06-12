@@ -45,6 +45,7 @@ import InwardInspectionFormPage from './pages/quality/InwardInspectionFormPage'
 import InwardInspectionDetailPage from './pages/quality/InwardInspectionDetailPage'
 import RackPage              from './pages/maintenance/RackPage'
 import BinPage               from './pages/maintenance/BinPage'
+import StoreMasterPage       from './pages/maintenance/StoreMasterPage'
 import ReportsPage           from './pages/reports/ReportsPage'
 import InventoryReportPage   from './pages/reports/InventoryReportPage'
 import BusinessReportPage    from './pages/reports/BusinessReportPage'
@@ -145,9 +146,10 @@ export default function App() {
         <Route path="inventory/inward/grn" element={<PurchasePage inwardType="GRN" title="GRN / Purchase Inward" subtitle="Manage goods receipt and purchase inward stock updates" addLabel="Add GRN / Purchase Inward" basePath="/inventory/inward/grn" />} />
         <Route path="inventory/inward/grn/new" element={<PurchaseFormPage inwardType="GRN" title="GRN / Purchase Inward" subtitle="Inventory -> Inward -> GRN / Purchase Inward" saveLabel="Save GRN / Purchase Inward" cancelPath="/inventory/inward/grn" numberPrefix="GRN" />} />
         <Route path="inventory/inward/grn/:id" element={<PurchaseFormPage inwardType="GRN" title="GRN / Purchase Inward" subtitle="Inventory -> Inward -> GRN / Purchase Inward" saveLabel="Save GRN / Purchase Inward" cancelPath="/inventory/inward/grn" numberPrefix="GRN" />} />
-        <Route path="inventory/inward-process" element={<PurchasePage inwardType="PO" title="Inward List" subtitle="Inventory -> Inward Process -> Inward List" addLabel="Create Inward" basePath="/inventory/inward-process" />} />
-        <Route path="inventory/inward-process/new" element={<PurchaseFormPage inwardType="PO" title="Create Inward" subtitle="Inventory -> Inward Process -> Create Inward" saveLabel="Save Inward" cancelPath="/inventory/inward-process" numberPrefix="INW" />} />
-        <Route path="inventory/inward-process/:id" element={<PurchaseFormPage inwardType="PO" title="Edit Inward" subtitle="Inventory -> Inward Process -> Edit Inward" saveLabel="Save Inward" cancelPath="/inventory/inward-process" numberPrefix="INW" />} />
+        <Route path="quality/inward-process" element={<PurchasePage inwardType="PO" title="Inward List" subtitle="Quality -> Inward Process -> Inward List" addLabel="Create Inward" basePath="/quality/inward-process" />} />
+        <Route path="quality/inward-process/new" element={<PurchaseFormPage inwardType="PO" title="Create Inward" subtitle="Quality -> Inward Process -> Create Inward" saveLabel="Save Inward" cancelPath="/quality/inward-process" numberPrefix="INW" />} />
+        <Route path="quality/inward-process/:id" element={<PurchaseFormPage inwardType="PO" title="Edit Inward" subtitle="Quality -> Inward Process -> Edit Inward" saveLabel="Save Inward" cancelPath="/quality/inward-process" numberPrefix="INW" />} />
+        <Route path="inventory/inward-process/*" element={<Navigate to="/quality/inward-process" replace />} />
         <Route path="inventory/inward/po" element={<PurchasePage inwardType="PO" title="PO Inward" subtitle="Manage purchase order inward entries and stock updates" addLabel="Add PO Inward" basePath="/inventory/inward/po" />} />
         <Route path="inventory/inward/po/new" element={<PurchaseFormPage inwardType="PO" title="PO Inward" subtitle="Inventory -> Inward -> PO Inward" saveLabel="Save PO Inward" cancelPath="/inventory/inward/po" numberPrefix="POI" />} />
         <Route path="inventory/inward/po/:id" element={<PurchaseFormPage inwardType="PO" title="PO Inward" subtitle="Inventory -> Inward -> PO Inward" saveLabel="Save PO Inward" cancelPath="/inventory/inward/po" numberPrefix="POI" />} />
@@ -157,6 +159,7 @@ export default function App() {
         <Route path="inventory/inward/jo" element={<PurchasePage inwardType="JO" title="JO Inward" subtitle="Manage JO inward entries and stock updates" addLabel="Add JO Inward" basePath="/inventory/inward/jo" />} />
         <Route path="inventory/inward/jo/new" element={<PurchaseFormPage inwardType="JO" title="JO Inward" subtitle="Inventory -> Inward -> JO Inward" saveLabel="Save JO Inward" cancelPath="/inventory/inward/jo" numberPrefix="JOI" />} />
         <Route path="inventory/inward/jo/:id" element={<PurchaseFormPage inwardType="JO" title="JO Inward" subtitle="Inventory -> Inward -> JO Inward" saveLabel="Save JO Inward" cancelPath="/inventory/inward/jo" numberPrefix="JOI" />} />
+        <Route path="inventory/inward-adjustment" element={<PurchaseFormPage inwardType="GRN" title="Inward Adjustment" subtitle="Quality -> Inward Adjustment" saveLabel="Save Inward Adjustment" cancelPath="/quality/inward-inspection" numberPrefix="IAD" />} />
         <Route path="inventory/return/po-dc" element={<PurchaseReturnPage returnType="PO_DC_RETURN" title="PO DC Return" subtitle="Manage DC/VIN and PO inward material returns" addLabel="Create New" basePath="/inventory/return/po-dc" />} />
         <Route path="inventory/return/po-dc/new" element={<PurchaseReturnFormPage returnType="PO_DC_RETURN" title="PO DC Return" subtitle="Inventory -> Return -> PO DC Return" saveLabel="Save PO DC Return" cancelPath="/inventory/return/po-dc" />} />
         <Route path="inventory/return/po-dc/:id" element={<PurchaseReturnFormPage returnType="PO_DC_RETURN" title="PO DC Return" subtitle="Inventory -> Return -> PO DC Return" saveLabel="Save PO DC Return" cancelPath="/inventory/return/po-dc" />} />
@@ -237,7 +240,10 @@ export default function App() {
         {processTypes.map((processType) => (
           <Route key={`${processType}-edit`} path={`process/${processType}/:id`} element={<ProcessFormPage processType={processType} />} />
         ))}
-        <Route path="quality/item-group" element={<ItemGroupPage />} />
+        <Route path="master/item-group" element={<ItemGroupPage />} />
+        <Route path="master/item-group/new" element={<ItemGroupPage mode="form" />} />
+        <Route path="master/store" element={<StoreMasterPage />} />
+        <Route path="quality/item-group/*" element={<Navigate to="/master/item-group" replace />} />
         <Route path="quality/inward-inspection" element={<InwardInspectionPage />} />
         <Route path="quality/inward-inspection/new" element={<InwardInspectionFormPage />} />
         <Route path="quality/inward-inspection/:id" element={<InwardInspectionDetailPage />} />

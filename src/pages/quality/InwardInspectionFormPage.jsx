@@ -9,7 +9,7 @@ import {
   getInwardInspectionSourceDetail,
   getInwardInspectionSources,
   getNextInwardInspectionNumber,
-  getRacks,
+  getStores,
 } from '../../lib/api'
 
 function todayValue() {
@@ -43,7 +43,7 @@ export default function InwardInspectionFormPage() {
   const [sourceHeader, setSourceHeader] = useState(null)
   const [sourceCatalog, setSourceCatalog] = useState([])
   const [sourceItems, setSourceItems] = useState([])
-  const [rackOptions, setRackOptions] = useState([])
+  const [storeOptions, setStoreOptions] = useState([])
   const [currentUserName, setCurrentUserName] = useState('')
 
   const [form, setForm] = useState({
@@ -61,10 +61,10 @@ export default function InwardInspectionFormPage() {
         setBootLoading(true)
         setError('')
 
-        const [numberResult, currentUser, racks] = await Promise.all([
+        const [numberResult, currentUser, stores] = await Promise.all([
           getNextInwardInspectionNumber(),
           getCurrentUser(),
-          getRacks(),
+          getStores(),
         ])
 
         setForm((current) => ({
@@ -74,13 +74,13 @@ export default function InwardInspectionFormPage() {
 
         setCurrentUserName(currentUser?.full_name || currentUser?.email || '')
 
-        setRackOptions(
-          (Array.isArray(racks) ? racks : [])
-            .filter((rack) => rack.isActive !== false)
-            .map((rack) => ({
-              value: rack.rackName || rack.rackCode,
-              key: rack.rackCode || rack.rackName,
-              label: [rack.rackCode, rack.rackName, rack.location].filter(Boolean).join(' - '),
+        setStoreOptions(
+          (Array.isArray(stores) ? stores : [])
+            .filter((store) => store.isActive !== false)
+            .map((store) => ({
+              value: store.storeName,
+              key: store.storeCode || store.storeName,
+              label: [store.storeCode, store.storeName, store.location].filter(Boolean).join(' - '),
             }))
         )
       } catch (bootError) {
@@ -141,7 +141,7 @@ export default function InwardInspectionFormPage() {
             rejected_qty: '0',
             rework_qty: '0',
             testing: 'QUALITY CHECK',
-            location: '',
+            location: result.header?.extra_data?.location || '',
             batch_number: '',
             remark: '',
             attachment: '',
@@ -169,6 +169,8 @@ export default function InwardInspectionFormPage() {
   const inwardTypeOptions = [
     { value: 'PO', label: 'PO Inward' },
     { value: 'LO', label: 'LO Inward' },
+    { value: 'JO', label: 'JO / Customer Job Work Inward' },
+    { value: 'GRN', label: 'General Inward' },
   ]
 
   const inwardNumberOptions = useMemo(
@@ -257,6 +259,12 @@ export default function InwardInspectionFormPage() {
     if (sourceItems.some((row) => decimalValue(row.accepted_qty) < 0)) {
       setSuccess('')
       setError('Accepted quantity cannot be negative.')
+      return
+    }
+
+    if (sourceItems.some((row) => !String(row.location || '').trim())) {
+      setSuccess('')
+      setError('Store / location is required for every inspected item.')
       return
     }
 
@@ -443,8 +451,8 @@ export default function InwardInspectionFormPage() {
                   <td className="px-3 py-3">
                     <select className="form-select min-w-36" value={row.location} onChange={(event) => updateItemRow(index, 'location', event.target.value)}>
                       <option value="">Select rack / store</option>
-                      {rackOptions.map((rack) => (
-                        <option key={rack.key} value={rack.value}>{rack.label}</option>
+                      {storeOptions.map((store) => (
+                        <option key={store.key} value={store.value}>{store.label}</option>
                       ))}
                     </select>
                   </td>
@@ -489,8 +497,8 @@ export default function InwardInspectionFormPage() {
                   <td className="px-3 py-3">
                     <select className="form-select min-w-36" value={row.location} onChange={(event) => updateItemRow(index, 'location', event.target.value)}>
                       <option value="">Select rack / store</option>
-                      {rackOptions.map((rack) => (
-                        <option key={rack.key} value={rack.value}>{rack.label}</option>
+                      {storeOptions.map((store) => (
+                        <option key={store.key} value={store.value}>{store.label}</option>
                       ))}
                     </select>
                   </td>
