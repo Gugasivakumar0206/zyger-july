@@ -27,14 +27,26 @@ const MASTER_CONFIG = {
     ],
   },
   process: {
-    title: 'Process',
-    createTitle: 'New Process',
+    title: 'Item Process',
+    createTitle: 'New Item Process',
     codeLabel: 'Process Code',
     nameLabel: 'Process Name',
     path: '/master/process',
     columns: [
       { key: 'code', label: 'Process Code', width: 150 },
       { key: 'name', label: 'Process Name' },
+    ],
+  },
+  'asset-manager': {
+    title: 'Asset Manager',
+    createTitle: 'New Asset Manager',
+    codeLabel: 'Asset Code',
+    nameLabel: 'Asset Name',
+    path: '/master/asset-manager',
+    columns: [
+      { key: 'code', label: 'Asset Code', width: 150 },
+      { key: 'name', label: 'Asset Name' },
+      { key: 'remarks', label: 'Remarks', width: 220 },
     ],
   },
   'process-group': {

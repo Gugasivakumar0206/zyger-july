@@ -227,6 +227,10 @@ export default function App() {
         <Route path="master/process-group" element={<ProcessMasterPage masterType="process-group" />} />
         <Route path="master/process-group/new" element={<ProcessMasterPage masterType="process-group" mode="form" />} />
         <Route path="master/process-group/:id" element={<ProcessMasterPage masterType="process-group" mode="form" />} />
+        <Route path="master/asset-manager" element={<ProcessMasterPage masterType="asset-manager" />} />
+        <Route path="master/asset-manager/new" element={<ProcessMasterPage masterType="asset-manager" mode="form" />} />
+        <Route path="master/asset-manager/:id" element={<ProcessMasterPage masterType="asset-manager" mode="form" />} />
+        <Route path="settings/flow" element={<ProcessFlowPage />} />
         <Route path="process-flow" element={<ProcessFlowPage />} />
         {processTypes.map((processType) => (
           <Route key={`${processType}-list`} path={`process/${processType}`} element={<ProcessListPage processType={processType} />} />

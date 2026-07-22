@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Boxes, Download, FileSpreadsheet, IndianRupee, Package, Printer } from 'lucide-react'
 
 import { PageContainer } from '../../components/ui/index'
@@ -32,10 +32,23 @@ export default function InventoryReportPage() {
   const [summary, setSummary] = useState({
     total_items: 0,
     total_stock_qty: 0,
+    accepted_stock: 0,
+    rejected_stock: 0,
+    idle_stock: 0,
     total_stock_value: 0,
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [filters, setFilters] = useState({
+    dateFrom: '',
+    dateTo: '',
+    stockType: 'Store Stock',
+    itemType: '',
+    groupType: '',
+    stockQty: '',
+    search: '',
+    showGroupTotal: true,
+  })
 
   useEffect(() => {
     async function loadReport() {
@@ -55,8 +68,31 @@ export default function InventoryReportPage() {
     loadReport()
   }, [])
 
+  const groupOptions = useMemo(
+    () => [...new Set(rows.map(row => row.item_group).filter(Boolean))],
+    [rows]
+  )
+
+  const filteredRows = useMemo(() => {
+    const search = filters.search.trim().toLowerCase()
+    return rows.filter(row => {
+      if (filters.groupType && row.item_group !== filters.groupType) return false
+      if (filters.stockQty === 'stock-only' && Number(row.current_stock || 0) <= 0) return false
+      if (filters.stockQty === 'zero-stock' && Number(row.current_stock || 0) !== 0) return false
+      if (filters.stockQty === 'accepted' && Number(row.accepted_stock || 0) <= 0) return false
+      if (filters.stockQty === 'rejected' && Number(row.rejected_stock || 0) <= 0) return false
+      if (filters.stockQty === 'idle' && Number(row.idle_stock || 0) <= 0) return false
+      if (!search) return true
+      return [row.item_code, row.item_name, row.item_group, row.uom, row.status]
+        .filter(Boolean)
+        .some(value => String(value).toLowerCase().includes(search))
+    })
+  }, [filters, rows])
+
+  const updateFilter = (key, value) => setFilters(current => ({ ...current, [key]: value }))
+
   function downloadExcel() {
-    const tableRows = rows.map((row) => `
+    const tableRows = filteredRows.map((row) => `
       <tr>
         <td>${escapeHtml(row.item_code)}</td>
         <td>${escapeHtml(row.item_name)}</td>
@@ -115,7 +151,7 @@ export default function InventoryReportPage() {
 
   function downloadPdf() {
     const generatedAt = new Date().toLocaleString('en-IN')
-    const tableRows = rows.map((row) => `
+    const tableRows = filteredRows.map((row) => `
       <tr>
         <td>${escapeHtml(row.item_code)}</td>
         <td>${escapeHtml(row.item_name)}</td>
@@ -184,7 +220,7 @@ export default function InventoryReportPage() {
               <div class="meta">
                 <div><strong>Generated</strong></div>
                 <div>${escapeHtml(generatedAt)}</div>
-                <div>Records: ${rows.length}</div>
+                <div>Records: ${filteredRows.length}</div>
               </div>
             </div>
             <div class="summary">
@@ -247,7 +283,67 @@ export default function InventoryReportPage() {
         </>
       )}
     >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+      <div className="card p-4 mb-5" style={{ border: '1px solid #d7e8ff' }}>
+        <div className="grid grid-cols-1 md:grid-cols-4 xl:grid-cols-6 gap-3">
+          <div>
+            <label className="form-label">Date From</label>
+            <input className="form-input" type="date" value={filters.dateFrom} onChange={event => updateFilter('dateFrom', event.target.value)} />
+          </div>
+          <div>
+            <label className="form-label">Date To</label>
+            <input className="form-input" type="date" value={filters.dateTo} onChange={event => updateFilter('dateTo', event.target.value)} />
+          </div>
+          <div>
+            <label className="form-label">Stock</label>
+            <select className="form-select" value={filters.stockType} onChange={event => updateFilter('stockType', event.target.value)}>
+              <option>Store Stock</option>
+              <option>Shop Floor</option>
+              <option>Supplier Stock</option>
+              <option>Rejected / Hold Stock</option>
+              <option>Idle Stock</option>
+            </select>
+          </div>
+          <div>
+            <label className="form-label">Item Type</label>
+            <select className="form-select" value={filters.itemType} onChange={event => updateFilter('itemType', event.target.value)}>
+              <option value="">All</option>
+              <option>Purchasable Item</option>
+              <option>Manufacturing Item</option>
+              <option>Customer Supplied</option>
+            </select>
+          </div>
+          <div>
+            <label className="form-label">Group Type</label>
+            <select className="form-select" value={filters.groupType} onChange={event => updateFilter('groupType', event.target.value)}>
+              <option value="">All</option>
+              {groupOptions.map(group => <option key={group} value={group}>{group}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="form-label">Stock Qty</label>
+            <select className="form-select" value={filters.stockQty} onChange={event => updateFilter('stockQty', event.target.value)}>
+              <option value="">All</option>
+              <option value="stock-only">Stock Only</option>
+              <option value="zero-stock">Zero Stock</option>
+              <option value="accepted">Accepted Only</option>
+              <option value="rejected">Rejected / Hold</option>
+              <option value="idle">Idle Stock</option>
+            </select>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 mt-3 items-end">
+          <div>
+            <label className="form-label">Search</label>
+            <input className="form-input" value={filters.search} onChange={event => updateFilter('search', event.target.value)} placeholder="Search item code, item name, group..." />
+          </div>
+          <label className="flex items-center gap-2 text-sm font-bold text-slate-700 pb-2">
+            <input type="checkbox" checked={filters.showGroupTotal} onChange={event => updateFilter('showGroupTotal', event.target.checked)} />
+            Show Group Total
+          </label>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-5">
         <div className="card">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
@@ -256,6 +352,42 @@ export default function InventoryReportPage() {
             <div>
               <p className="text-xs text-slate-500">Total Items</p>
               <p className="text-2xl font-bold text-slate-800">{formatNumber(summary.total_items)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
+              <Boxes size={18} className="text-green-600" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">Accepted Stock</p>
+              <p className="text-2xl font-bold text-green-700">{formatNumber(summary.accepted_stock)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center">
+              <Boxes size={18} className="text-red-600" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">Rejected / Hold</p>
+              <p className="text-2xl font-bold text-red-600">{formatNumber(summary.rejected_stock)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+              <Boxes size={18} className="text-slate-700" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">Idle Stock</p>
+              <p className="text-2xl font-bold text-slate-800">{formatNumber(summary.idle_stock)}</p>
             </div>
           </div>
         </div>
@@ -290,7 +422,7 @@ export default function InventoryReportPage() {
           <div className="py-10 text-center text-slate-500 font-medium">Loading inventory report...</div>
         ) : error ? (
           <div className="py-10 text-center text-red-500 font-medium">{error}</div>
-        ) : rows.length === 0 ? (
+        ) : filteredRows.length === 0 ? (
           <div className="py-10 text-center text-slate-500 font-medium">No items found for report generation.</div>
         ) : (
           <div className="overflow-x-auto">
@@ -302,6 +434,9 @@ export default function InventoryReportPage() {
                   <th className="px-4 py-3 text-left font-semibold text-slate-600">Group</th>
                   <th className="px-4 py-3 text-left font-semibold text-slate-600">UOM</th>
                   <th className="px-4 py-3 text-right font-semibold text-slate-600">Stock Qty</th>
+                  <th className="px-4 py-3 text-right font-semibold text-slate-600">Accepted</th>
+                  <th className="px-4 py-3 text-right font-semibold text-slate-600">Rejected/Hold</th>
+                  <th className="px-4 py-3 text-right font-semibold text-slate-600">Idle</th>
                   <th className="px-4 py-3 text-right font-semibold text-slate-600">Purchase Rate</th>
                   <th className="px-4 py-3 text-right font-semibold text-slate-600">Sales Rate</th>
                   <th className="px-4 py-3 text-right font-semibold text-slate-600">Stock Value</th>
@@ -309,13 +444,16 @@ export default function InventoryReportPage() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => (
+                {filteredRows.map((row) => (
                   <tr key={row.id} className="border-t border-slate-100">
                     <td className="px-4 py-3 text-slate-700 font-medium">{row.item_code}</td>
                     <td className="px-4 py-3 text-slate-700">{row.item_name}</td>
                     <td className="px-4 py-3 text-slate-500">{row.item_group || '-'}</td>
                     <td className="px-4 py-3 text-slate-500">{row.uom || '-'}</td>
                     <td className="px-4 py-3 text-right text-slate-700">{formatNumber(row.current_stock)}</td>
+                    <td className="px-4 py-3 text-right text-green-700 font-semibold">{formatNumber(row.accepted_stock)}</td>
+                    <td className="px-4 py-3 text-right text-red-600 font-semibold">{formatNumber(row.rejected_stock)}</td>
+                    <td className="px-4 py-3 text-right text-slate-700 font-semibold">{formatNumber(row.idle_stock)}</td>
                     <td className="px-4 py-3 text-right text-slate-700">{formatCurrency(row.purchase_rate)}</td>
                     <td className="px-4 py-3 text-right text-slate-700">{formatCurrency(row.sales_rate)}</td>
                     <td className="px-4 py-3 text-right text-slate-700 font-semibold">{formatCurrency(row.stock_value)}</td>

@@ -137,6 +137,18 @@ export default function ItemGroupPage({ mode = 'list' }) {
               Active
             </label>
           </FormGrid>
+          <div className="mt-5 rounded-xl bg-slate-50 border border-slate-100 p-5">
+            <div className="text-xs font-black uppercase tracking-wide text-slate-500 mb-3">
+              Default Process Flow
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="rounded-full bg-green-500 text-white font-black px-5 py-4">START</div>
+              <span className="text-slate-400 font-black">-&gt;</span>
+              <div className="rounded-xl border border-blue-100 bg-white px-4 py-3 font-bold text-slate-700">
+                Process
+              </div>
+            </div>
+          </div>
           <button type="button" className="btn-primary mt-5" onClick={saveGroup} disabled={saving}>
             <Save size={14} /> {saving ? 'Saving...' : 'Save Item Group'}
           </button>

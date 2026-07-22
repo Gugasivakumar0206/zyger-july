@@ -30,24 +30,14 @@ export const NAV_MENU = [
           {
             label: 'Configurations',
             children: [
-              { label: 'Process', path: '/master/process' },
+              { label: 'Item Process', path: '/master/process' },
               { label: 'Process Group', path: '/master/process-group' },
+              { label: 'Asset Manager', path: '/master/asset-manager' },
             ],
           },
         ],
       },
-      {
-        label: 'Planning',
-        icon: BarChart3,
-        children: [
-          { label: 'UOM', path: '/planning/uom' },
-        ],
-      },
-      {
-        label: 'Bill of Material (BOM)',
-        icon: FileStack,
-        path: '/process/bom',
-      },
+
       {
         label: 'Customer List',
         icon: Users,
@@ -73,6 +63,16 @@ export const NAV_MENU = [
   },
 
   {
+    label: 'Planning',
+    icon: BarChart3,
+    children: [
+      { label: 'Bill of Material (BOM)', icon: FileStack, path: '/process/bom' },
+      { label: 'Route Sheet', icon: GitBranch, path: '/process/routesheet' },
+      { label: 'Material Requirement Planning (MRP)', icon: ClipboardList, path: '/process/mrp' },
+    ],
+  },
+
+  {
     label: 'CRM',
     icon: Target,
     children: [
@@ -90,10 +90,17 @@ export const NAV_MENU = [
     label: 'Sales',
     icon: TrendingUp,
     children: [
-      { label: 'Sales Order (SO)', path: '/process/so' },
-      { label: 'Sales DC', path: '/sales/dc' },
-      { label: 'Tax Invoice', path: '/invoice/tax' },
-      { label: 'Sale Invoice', path: '/invoice/sale' },
+      {
+        label: 'Sales Order',
+        path: '/process/so',
+        children: [
+          { label: 'Sales Order (SO)', path: '/process/so' },
+          { label: 'Sales DC', path: '/sales/dc' },
+          { label: 'Tax Invoice', path: '/invoice/tax' },
+          { label: 'Sales Invoice', path: '/invoice/sale' },
+          { label: 'Labour Invoice', path: '/invoice/labour' },
+        ],
+      },
     ],
   },
 
@@ -103,7 +110,6 @@ export const NAV_MENU = [
     children: [
       { label: 'Purchase Request (PR)', path: '/process/pr' },
       { label: 'Purchase Order (PO)', path: '/process/po' },
-      { label: 'Labour Invoice', path: '/purchase/labour-invoice' },
     ],
   },
 
@@ -156,7 +162,7 @@ export const NAV_MENU = [
     icon: Settings,
     children: [
       { label: 'Settings', path: '/settings' },
-      { label: 'ERP Process Flow', icon: GitBranch, path: '/process-flow' },
+      { label: 'Flow', icon: GitBranch, path: '/settings/flow' },
     ],
   },
 ]

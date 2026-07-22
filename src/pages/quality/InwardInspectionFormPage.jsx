@@ -140,6 +140,9 @@ export default function InwardInspectionFormPage() {
             accepted_qty: String(item.qty ?? '0'),
             rejected_qty: '0',
             rework_qty: '0',
+            hold_qty: '0',
+            hold_number: '',
+            idle_stock_qty: '0',
             testing: 'QUALITY CHECK',
             location: result.header?.extra_data?.location || '',
             batch_number: '',
@@ -177,7 +180,7 @@ export default function InwardInspectionFormPage() {
     () =>
       sourceHeaders.map((row) => ({
         value: String(row.id),
-        label: `${row.inward_no} - ${row.company_name}`,
+        label: `${row.inward_no} - ${row.company_name}${row.supplier_gstin ? ` - GST ${row.supplier_gstin}` : ''}`,
       })),
     [sourceHeaders]
   )
@@ -215,6 +218,9 @@ export default function InwardInspectionFormPage() {
             accepted_qty: String(selected.qty ?? '0'),
             rejected_qty: '0',
             rework_qty: '0',
+            hold_qty: '0',
+            hold_number: '',
+            idle_stock_qty: '0',
             rejection_reason: '',
           }
         }
@@ -223,7 +229,9 @@ export default function InwardInspectionFormPage() {
         const received = decimalValue(nextRow.received_qty)
         const rejected = decimalValue(nextRow.rejected_qty)
         const rework = decimalValue(nextRow.rework_qty)
-        const accepted = Math.max(received - rejected - rework, 0)
+        const hold = decimalValue(nextRow.hold_qty)
+        const idle = decimalValue(nextRow.idle_stock_qty)
+        const accepted = Math.max(received - rejected - rework - hold - idle, 0)
 
         nextRow.accepted_qty = String(accepted)
         return nextRow
@@ -238,9 +246,11 @@ export default function InwardInspectionFormPage() {
         acc.accepted += decimalValue(row.accepted_qty)
         acc.rejected += decimalValue(row.rejected_qty)
         acc.rework += decimalValue(row.rework_qty)
+        acc.hold += decimalValue(row.hold_qty)
+        acc.idle += decimalValue(row.idle_stock_qty)
         return acc
       },
-      { received: 0, accepted: 0, rejected: 0, rework: 0 }
+      { received: 0, accepted: 0, rejected: 0, rework: 0, hold: 0, idle: 0 }
     )
   }, [sourceItems])
 
@@ -287,6 +297,9 @@ export default function InwardInspectionFormPage() {
           received_qty: row.received_qty || '0',
           rejected_qty: row.rejected_qty || '0',
           rework_qty: row.rework_qty || '0',
+          hold_qty: row.hold_qty || '0',
+          hold_number: row.hold_number || '',
+          idle_stock_qty: row.idle_stock_qty || '0',
           testing: row.testing || 'QUALITY CHECK',
           location: row.location || '',
           batch_number: row.batch_number || '',
@@ -361,6 +374,9 @@ export default function InwardInspectionFormPage() {
           <FormInput label="Source Inward Date" value={sourceHeader?.inward_date || ''} readOnly />
           <FormInput label="Invoice No" value={sourceHeader?.invoice_no || ''} readOnly />
           <FormInput label="Created By" value={currentUserName} readOnly />
+          <FormInput label="Supplier Code" value={sourceHeader?.supplier_code || '-'} readOnly />
+          <FormInput label="Supplier GSTIN" value={sourceHeader?.supplier_gstin || '-'} readOnly />
+          <FormInput label="Supplier Contact" value={sourceHeader?.supplier_mobile || sourceHeader?.supplier_email || '-'} readOnly />
         </FormGrid>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
@@ -475,6 +491,9 @@ export default function InwardInspectionFormPage() {
                 <th className="px-3 py-3 text-left">Item</th>
                 <th className="px-3 py-3 text-left">Rejected Qty</th>
                 <th className="px-3 py-3 text-left">Rework Qty</th>
+                <th className="px-3 py-3 text-left">Lot Hold Qty</th>
+                <th className="px-3 py-3 text-left">Hold Number</th>
+                <th className="px-3 py-3 text-left">Idle Stock Qty</th>
                 <th className="px-3 py-3 text-left">Store / Location</th>
                 <th className="px-3 py-3 text-left">Rejection Reason</th>
                 <th className="px-3 py-3 text-left">Attachment</th>
@@ -493,6 +512,15 @@ export default function InwardInspectionFormPage() {
                   </td>
                   <td className="px-3 py-3">
                     <input className="form-input min-w-24" type="number" min="0" step="0.01" value={row.rework_qty} onChange={(event) => updateItemRow(index, 'rework_qty', event.target.value)} />
+                  </td>
+                  <td className="px-3 py-3">
+                    <input className="form-input min-w-24" type="number" min="0" step="0.01" value={row.hold_qty} onChange={(event) => updateItemRow(index, 'hold_qty', event.target.value)} />
+                  </td>
+                  <td className="px-3 py-3">
+                    <input className="form-input min-w-32" value={row.hold_number} onChange={(event) => updateItemRow(index, 'hold_number', event.target.value)} placeholder="Lot hold no" />
+                  </td>
+                  <td className="px-3 py-3">
+                    <input className="form-input min-w-24" type="number" min="0" step="0.01" value={row.idle_stock_qty} onChange={(event) => updateItemRow(index, 'idle_stock_qty', event.target.value)} />
                   </td>
                   <td className="px-3 py-3">
                     <select className="form-select min-w-36" value={row.location} onChange={(event) => updateItemRow(index, 'location', event.target.value)}>
@@ -514,7 +542,7 @@ export default function InwardInspectionFormPage() {
           </table>
         </div>
 
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="card !p-4">
             <p className="text-xs text-slate-500">Rejected Item Rows</p>
             <p className="text-xl font-bold text-red-600">{rejectedRows.length}</p>
@@ -526,6 +554,14 @@ export default function InwardInspectionFormPage() {
           <div className="card !p-4">
             <p className="text-xs text-slate-500">Total Rework Qty</p>
             <p className="text-xl font-bold text-amber-600">{formatQty(totals.rework)}</p>
+          </div>
+          <div className="card !p-4">
+            <p className="text-xs text-slate-500">Lot Hold Qty</p>
+            <p className="text-xl font-bold text-indigo-600">{formatQty(totals.hold)}</p>
+          </div>
+          <div className="card !p-4">
+            <p className="text-xs text-slate-500">Idle Stock Qty</p>
+            <p className="text-xl font-bold text-slate-700">{formatQty(totals.idle)}</p>
           </div>
         </div>
       </SectionCard>
@@ -541,7 +577,7 @@ export default function InwardInspectionFormPage() {
       </SectionCard>
 
       <SectionCard title="Inspection Summary" icon={PackageCheck} defaultOpen={false}>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
           <div className="card !p-4">
             <p className="text-xs text-slate-500">Received Qty</p>
             <p className="text-xl font-bold text-slate-800">{formatQty(totals.received)}</p>
@@ -557,6 +593,14 @@ export default function InwardInspectionFormPage() {
           <div className="card !p-4">
             <p className="text-xs text-slate-500">Rework Qty</p>
             <p className="text-xl font-bold text-amber-600">{formatQty(totals.rework)}</p>
+          </div>
+          <div className="card !p-4">
+            <p className="text-xs text-slate-500">Lot Hold Qty</p>
+            <p className="text-xl font-bold text-indigo-600">{formatQty(totals.hold)}</p>
+          </div>
+          <div className="card !p-4">
+            <p className="text-xs text-slate-500">Idle Stock Qty</p>
+            <p className="text-xl font-bold text-slate-700">{formatQty(totals.idle)}</p>
           </div>
         </div>
       </SectionCard>

@@ -50,6 +50,7 @@ def _ensure_sale_invoice_columns(cursor):
     cursor.execute("ALTER TABLE sale_invoices ADD COLUMN IF NOT EXISTS pdf_file_name VARCHAR(200)")
     cursor.execute("ALTER TABLE sale_invoices ADD COLUMN IF NOT EXISTS pdf_html TEXT")
     cursor.execute("ALTER TABLE sale_invoices ADD COLUMN IF NOT EXISTS pdf_saved_at TIMESTAMP")
+    cursor.execute("ALTER TABLE sales_dc ADD COLUMN IF NOT EXISTS po_number VARCHAR(100)")
 
 
 def _normalize_items(data):

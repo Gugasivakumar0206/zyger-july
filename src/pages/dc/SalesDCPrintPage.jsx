@@ -1,12 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import logo from '../../assets/zyger-logo.svg'
-import { getSalesDCById } from '../../lib/api'
-
-const COMPANY = {
-  name: 'Zyger ERP',
-  address: 'ERP Business Suite',
-}
+import { getCompanyInfo, getSalesDCById } from '../../lib/api'
 
 function formatDate(value) {
   if (!value) return '-'
@@ -15,9 +10,17 @@ function formatDate(value) {
   return date.toLocaleDateString('en-GB')
 }
 
+function formatMoney(value) {
+  return Number(value || 0).toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}
+
 export default function SalesDCPrintPage() {
   const { id } = useParams()
   const [record, setRecord] = useState(null)
+  const [companyInfo, setCompanyInfo] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
@@ -26,8 +29,12 @@ export default function SalesDCPrintPage() {
       try {
         setLoading(true)
         setError('')
-        const result = await getSalesDCById(id)
-        setRecord(result)
+        const [dcResult, companyResult] = await Promise.all([
+          getSalesDCById(id),
+          getCompanyInfo(),
+        ])
+        setRecord(dcResult)
+        setCompanyInfo(companyResult?.company || null)
       } catch (loadError) {
         setError(loadError.message || 'Unable to load Sales DC print preview.')
       } finally {
@@ -49,6 +56,11 @@ export default function SalesDCPrintPage() {
     ].filter(Boolean).join(', ')
   }, [record])
 
+  const companyDisplayAddress = useMemo(() => {
+    if (!companyInfo) return '-'
+    return [companyInfo.address, companyInfo.city, companyInfo.state, companyInfo.pincode].filter(Boolean).join(', ')
+  }, [companyInfo])
+
   if (loading) {
     return <div style={{ padding: '40px', fontFamily: 'Arial, sans-serif' }}>Loading Sales DC print preview...</div>
   }
@@ -58,6 +70,7 @@ export default function SalesDCPrintPage() {
   }
 
   if (!record) return null
+  const copyLabels = ['ORIGINAL COPY', 'DUPLICATE FOR TRANSPORTER']
 
   return (
     <>
@@ -68,6 +81,7 @@ export default function SalesDCPrintPage() {
           body { background: white; }
           .print-toolbar { display: none !important; }
           .print-shell { margin: 0 !important; box-shadow: none !important; }
+          .print-copy + .print-copy { break-before: page; page-break-before: always; }
         }
       `}</style>
 
@@ -77,28 +91,37 @@ export default function SalesDCPrintPage() {
         </button>
       </div>
 
-      <div className="print-shell" style={{ width: '820px', margin: '0 auto 24px', background: 'white', boxShadow: '0 12px 40px rgba(15,23,42,0.15)', border: '1px solid #d1d5db' }}>
+      {copyLabels.map((copyLabel) => (
+      <div key={copyLabel} className="print-shell print-copy" style={{ width: '840px', margin: '0 auto 24px', background: 'white', boxShadow: '0 12px 40px rgba(15,23,42,0.15)', border: '1px solid #d1d5db' }}>
         <div style={{ padding: '18px 22px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '88px 1fr', gap: '14px', alignItems: 'center', borderBottom: '2px solid #94d2e8', paddingBottom: '12px' }}>
-            <div style={{ width: '76px', height: '76px', border: '1px solid #d1d5db', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img src={logo} alt="Zyger ERP" style={{ width: '62px', height: '62px', objectFit: 'contain' }} />
+          <div style={{ textAlign: 'right', fontSize: '14px', marginBottom: '8px', fontWeight: 800 }}>{copyLabel}</div>
+          <div style={{ border: '1px solid #4b5563' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '88px 1fr', gap: '14px', alignItems: 'center', padding: '14px', borderBottom: '1px solid #4b5563' }}>
+              <div style={{ width: '76px', height: '76px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img src={companyInfo?.company_logo || logo} alt={companyInfo?.print_name || companyInfo?.company_name || 'Zyger ERP'} style={{ width: '68px', height: '68px', objectFit: 'contain' }} />
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '28px', fontWeight: 800 }}>{companyInfo?.print_name || companyInfo?.company_name || 'Zyger ERP'}</div>
+                <div style={{ fontSize: '13px', marginTop: '4px' }}>{companyDisplayAddress}</div>
+                <div style={{ fontSize: '13px', marginTop: '6px', fontWeight: 700 }}>
+                  PAN No: {companyInfo?.pan_it_no || '-'} , GSTIN: {companyInfo?.gstin || '-'}
+                </div>
+                <div style={{ fontSize: '13px', marginTop: '4px' }}>
+                  Email id: {companyInfo?.email || '-'} &nbsp;&nbsp; Phone No: {companyInfo?.mobile_no || '-'}
+                </div>
+              </div>
             </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '0.02em' }}>{COMPANY.name}</div>
-              <div style={{ marginTop: '6px', fontSize: '14px', lineHeight: 1.5 }}>{COMPANY.address}</div>
-            </div>
-          </div>
 
-          <div style={{ background: '#bde7f3', borderTop: '1px solid #4b5563', borderBottom: '1px solid #4b5563', textAlign: 'center', fontSize: '26px', fontWeight: 800, padding: '8px 0', marginTop: '10px' }}>
-            SALES DC
-          </div>
+            <div style={{ background: '#bde7f3', borderBottom: '1px solid #4b5563', textAlign: 'center', fontSize: '20px', fontWeight: 800, padding: '6px 0' }}>
+              SALES DELIVERY CHALLAN
+            </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 0.95fr', borderLeft: '1px solid #4b5563', borderRight: '1px solid #4b5563', borderBottom: '1px solid #4b5563' }}>
             <div style={{ padding: '10px 12px', borderRight: '1px solid #4b5563' }}>
               <div style={{ fontSize: '16px', fontWeight: 700, marginBottom: '8px' }}>To</div>
               <div style={{ fontSize: '15px', fontWeight: 700 }}>{record.customer.customer_name}</div>
               <div style={{ marginTop: '8px', fontSize: '14px', lineHeight: 1.5 }}>{customerAddress || '-'}</div>
-              <div style={{ marginTop: '10px', fontSize: '14px' }}><strong>Vendor Code:</strong> {record.customer.customer_code || '-'}</div>
+              <div style={{ marginTop: '10px', fontSize: '14px' }}><strong>Customer Code:</strong> {record.customer.customer_code || '-'}</div>
               <div style={{ marginTop: '6px', fontSize: '14px' }}><strong>GSTIN:</strong> {record.customer.gstin || '-'}</div>
               <div style={{ marginTop: '6px', fontSize: '14px' }}><strong>Contact:</strong> {record.customer.mobile || record.customer.phone || '-'}</div>
               <div style={{ marginTop: '6px', fontSize: '14px' }}><strong>Email:</strong> {record.customer.email || '-'}</div>
@@ -137,18 +160,27 @@ export default function SalesDCPrintPage() {
                     <div style={{ marginTop: '4px' }}>{item.item_name}</div>
                   </td>
                   <td style={{ border: '1px solid #4b5563', padding: '8px 6px', fontSize: '13px', textAlign: 'center', verticalAlign: 'top' }}>{item.hsn_code || '-'}</td>
-                  <td style={{ border: '1px solid #4b5563', padding: '8px 6px', fontSize: '13px', textAlign: 'right', verticalAlign: 'top' }}>{Number(item.qty || 0).toFixed(2)}</td>
+                  <td style={{ border: '1px solid #4b5563', padding: '8px 6px', fontSize: '13px', textAlign: 'right', verticalAlign: 'top' }}>{formatMoney(item.qty || 0)}</td>
                   <td style={{ border: '1px solid #4b5563', padding: '8px 6px', fontSize: '13px', textAlign: 'center', verticalAlign: 'top' }}>{item.uom || '-'}</td>
-                  <td style={{ border: '1px solid #4b5563', padding: '8px 6px', fontSize: '13px', textAlign: 'right', verticalAlign: 'top' }}>{Number(item.sales_rate || 0).toFixed(2)}</td>
-                  <td style={{ border: '1px solid #4b5563', padding: '8px 6px', fontSize: '13px', textAlign: 'right', verticalAlign: 'top' }}>{Number(item.amount || 0).toFixed(2)}</td>
+                  <td style={{ border: '1px solid #4b5563', padding: '8px 6px', fontSize: '13px', textAlign: 'right', verticalAlign: 'top' }}>{formatMoney(item.sales_rate || 0)}</td>
+                  <td style={{ border: '1px solid #4b5563', padding: '8px 6px', fontSize: '13px', textAlign: 'right', verticalAlign: 'top' }}>{formatMoney(item.amount || 0)}</td>
                 </tr>
               ))}
               <tr>
+                <td style={{ borderLeft: '1px solid #4b5563', borderRight: '1px solid #4b5563', height: '300px' }} />
+                <td style={{ borderRight: '1px solid #4b5563' }} />
+                <td style={{ borderRight: '1px solid #4b5563' }} />
+                <td style={{ borderRight: '1px solid #4b5563' }} />
+                <td style={{ borderRight: '1px solid #4b5563' }} />
+                <td style={{ borderRight: '1px solid #4b5563' }} />
+                <td style={{ borderRight: '1px solid #4b5563' }} />
+              </tr>
+              <tr>
                 <td colSpan="3" style={{ border: '1px solid #4b5563', padding: '8px 10px', fontSize: '14px', fontWeight: 800, textAlign: 'right' }}>Total</td>
-                <td style={{ border: '1px solid #4b5563', padding: '8px 6px', fontSize: '14px', fontWeight: 800, textAlign: 'right' }}>{Number(record.summary.total_qty || 0).toFixed(2)}</td>
+                <td style={{ border: '1px solid #4b5563', padding: '8px 6px', fontSize: '14px', fontWeight: 800, textAlign: 'right' }}>{formatMoney(record.summary.total_qty || 0)}</td>
                 <td style={{ border: '1px solid #4b5563' }} />
                 <td style={{ border: '1px solid #4b5563' }} />
-                <td style={{ border: '1px solid #4b5563', padding: '8px 6px', fontSize: '14px', fontWeight: 800, textAlign: 'right' }}>{Number(record.summary.total_amount || 0).toFixed(2)}</td>
+                <td style={{ border: '1px solid #4b5563', padding: '8px 6px', fontSize: '14px', fontWeight: 800, textAlign: 'right' }}>{formatMoney(record.summary.total_amount || 0)}</td>
               </tr>
             </tbody>
           </table>
@@ -160,8 +192,8 @@ export default function SalesDCPrintPage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderLeft: '1px solid #4b5563', borderRight: '1px solid #4b5563', borderBottom: '1px solid #4b5563' }}>
             <div style={{ padding: '12px', minHeight: '130px', borderRight: '1px solid #4b5563', fontSize: '13px', lineHeight: 1.6 }}>
-              <div><strong>Our GSTIN:</strong> {record.customer.gstin || '-'}</div>
-              <div><strong>Our PAN:</strong> -</div>
+              <div><strong>Our GSTIN:</strong> {companyInfo?.gstin || '-'}</div>
+              <div><strong>Our PAN:</strong> {companyInfo?.pan_it_no || '-'}</div>
               <div><strong>Party GSTIN:</strong> {record.customer.gstin || '-'}</div>
               <div><strong>Party Name:</strong> {record.customer.customer_name || '-'}</div>
             </div>
@@ -173,12 +205,14 @@ export default function SalesDCPrintPage() {
               </div>
             </div>
             <div style={{ padding: '12px', minHeight: '130px', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div style={{ fontSize: '14px', fontWeight: 800 }}>For {COMPANY.name}</div>
+              <div style={{ fontSize: '14px', fontWeight: 800 }}>For {companyInfo?.print_name || companyInfo?.company_name || 'Zyger ERP'}</div>
               <div style={{ fontSize: '15px', fontWeight: 700 }}>Authorised Signatory</div>
             </div>
           </div>
+          </div>
         </div>
       </div>
+      ))}
     </>
   )
 }

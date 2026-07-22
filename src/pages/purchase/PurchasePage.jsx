@@ -27,8 +27,7 @@ export default function PurchasePage({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const columns = BASE_COLUMNS.filter((column) => {
-    if (inwardType === 'PO' && (column.key === 'customer' || column.key === 'status')) return false
-    if ((inwardType === 'LO' || inwardType === 'JO') && column.key === 'status') return false
+    if (inwardType === 'PO' && column.key === 'customer') return false
     return true
   })
 

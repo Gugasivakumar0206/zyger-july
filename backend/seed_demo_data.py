@@ -13,6 +13,11 @@ from database.db_connection import get_connection
 from routers.crm_router import _ensure_crm_tables
 from routers.master.planning_router import _ensure_process_tables
 from routers.master.quality_router import _ensure_quality_tables
+from routers.master.maintenance_router import _ensure_tables as _ensure_maintenance_tables
+from routers.purchase.purchase_return_router import _ensure_purchase_return_tables
+from routers.sales.sale_invoice_router import _ensure_sale_invoice_columns
+from routers.sales.sales_dc_router import _ensure_sales_dc_columns
+from routers.sales.tax_invoice_router import _ensure_tax_invoice_columns
 from routers.subcontract.subcontract_dc_router import _ensure_schema as _ensure_subcontract_schema
 
 
@@ -151,6 +156,23 @@ def item_line(item_id, code, name, quantity, uom, **extra):
     return row
 
 
+def seed_invoice_items(cursor, table, parent_column, parent_id, items):
+    for entry in items:
+        upsert(
+            cursor,
+            table,
+            {
+                parent_column: parent_id,
+                "item_id": entry["item_id"],
+                "qty": entry["qty"],
+                "rate": entry["rate"],
+                "tax_percent": entry.get("tax_percent", Decimal("18")),
+                "amount": entry["amount"],
+            },
+            [parent_column, "item_id"],
+        )
+
+
 def main():
     connection = get_connection()
     if connection is None:
@@ -165,6 +187,11 @@ def main():
         _ensure_crm_tables(cursor)
         _ensure_quality_tables(cursor)
         _ensure_process_tables(cursor)
+        _ensure_maintenance_tables(cursor)
+        _ensure_sales_dc_columns(cursor)
+        _ensure_sale_invoice_columns(cursor)
+        _ensure_tax_invoice_columns(cursor)
+        _ensure_purchase_return_tables(cursor)
         _ensure_subcontract_schema(cursor)
 
         print("2/8 Seeding users and masters...", flush=True)
@@ -180,6 +207,29 @@ def main():
                 "is_active": True,
             },
             ["email"],
+        )
+
+        upsert(
+            cursor,
+            "company_info",
+            {
+                "company_name": "Zyger Precision Industries LLP",
+                "print_name": "Zyger Precision Industries LLP",
+                "address": "52, Peelamedu Industrial Estate",
+                "delivery_address": "52, Peelamedu Industrial Estate, Coimbatore",
+                "city": "Coimbatore",
+                "state": "Tamil Nadu",
+                "pincode": "641004",
+                "mobile_no": "+91 98765 43210",
+                "email": "accounts@zygerprecision.in",
+                "website": "https://zygertechnology.in",
+                "contact_person": "Demo Admin",
+                "pan_it_no": "ABCDE1234F",
+                "gstin": "33ABCDE1234F1Z5",
+                "gst_state": "Tamil Nadu",
+                "company_display_type": "Logo With Name",
+            },
+            ["company_name"],
         )
 
         customer_id = upsert(
@@ -234,6 +284,44 @@ def main():
                 "credit_days": 30,
             },
             ["supplier_code"],
+        )
+
+        store_id = upsert(
+            cursor,
+            "maintenance_stores",
+            {
+                "store_code": "STORE-DEMO-001",
+                "store_name": "Main Raw Material Store",
+                "location": "Coimbatore Plant",
+                "description": "Default demo store for PO/JO/LO inward and stock reports",
+                "is_active": True,
+            },
+            ["store_code"],
+        )
+        rack_id = upsert(
+            cursor,
+            "maintenance_racks",
+            {
+                "store_id": store_id,
+                "rack_code": "RM-RACK-01",
+                "rack_name": "Raw Material Rack 01",
+                "description": "CRCA and electrical material rack",
+                "is_active": True,
+            },
+            ["rack_code"],
+        )
+        upsert(
+            cursor,
+            "maintenance_bins",
+            {
+                "store_id": store_id,
+                "rack_id": rack_id,
+                "bin_code": "RM-BIN-01",
+                "bin_name": "Raw Material Bin 01",
+                "description": "Default bin for demo accepted stock",
+                "is_active": True,
+            },
+            ["bin_code"],
         )
 
         fg_id = upsert(
@@ -594,6 +682,9 @@ def main():
                 "received_qty": Decimal("6"),
                 "accepted_qty": Decimal("5"),
                 "rejected_qty": Decimal("1"),
+                "hold_qty": Decimal("0"),
+                "hold_number": "HOLD-DEMO-001",
+                "idle_stock_qty": Decimal("0"),
                 "rework_qty": Decimal("0"),
                 "rejection_reason": "Terminal damaged",
                 "reason": "Terminal damaged",
@@ -603,7 +694,165 @@ def main():
             ["inspection_id", "item_id"],
         )
 
-        print("5/8 Seeding CRM...", flush=True)
+        upsert(
+            cursor,
+            "stock_ledger",
+            {
+                "item_id": rm_breaker_id,
+                "ref_type": "QUALITY_ACCEPTED",
+                "ref_id": inspection_id,
+                "inward_qty": Decimal("5"),
+                "outward_qty": Decimal("0"),
+                "balance_qty": Decimal("9"),
+                "remarks": "Accepted stock from INI-DEMO-001 at EL-RACK-01 / EL-BIN-01",
+                "stock_status": "Accepted",
+                "location": "Main Raw Material Store / EL-RACK-01 / EL-BIN-01",
+            },
+            ["item_id", "ref_type", "ref_id"],
+            returning=None,
+        )
+        upsert(
+            cursor,
+            "stock_ledger",
+            {
+                "item_id": rm_breaker_id,
+                "ref_type": "QUALITY_REJECTED",
+                "ref_id": inspection_id,
+                "inward_qty": Decimal("0"),
+                "outward_qty": Decimal("1"),
+                "balance_qty": Decimal("1"),
+                "remarks": "Rejected stock from INI-DEMO-001 - terminal damaged",
+                "stock_status": "Rejected",
+                "location": "Rejected Store",
+            },
+            ["item_id", "ref_type", "ref_id"],
+            returning=None,
+        )
+
+        print("5/9 Seeding Sales DC and invoices...", flush=True)
+        sales_dc_id = upsert(
+            cursor,
+            "sales_dc",
+            {
+                "dc_no": "SDC-DEMO-001",
+                "dc_date": TODAY,
+                "customer_id": customer_id,
+                "po_number": "APEX/PO/2026/001",
+                "reference_no": "SO-DEMO-001",
+                "vehicle_no": "TN37AB1234",
+                "mode_of_transport": "By Road",
+                "linked_invoice_ids": Json([]),
+                "remarks": "Sales DC created against demo Sales Order",
+                "status": "Open",
+            },
+            ["dc_no"],
+        )
+        upsert(
+            cursor,
+            "sales_dc_items",
+            {
+                "sales_dc_id": sales_dc_id,
+                "item_id": fg_id,
+                "qty": Decimal("2"),
+                "returned_qty": Decimal("0"),
+                "pending_qty": Decimal("0"),
+                "hsn_code": "85371000",
+            },
+            ["sales_dc_id", "item_id"],
+        )
+        sale_invoice_id = upsert(
+            cursor,
+            "sale_invoices",
+            {
+                "invoice_no": "SINV-DEMO-001",
+                "invoice_date": TODAY,
+                "customer_id": customer_id,
+                "sales_dc_id": sales_dc_id,
+                "address_type": "billing",
+                "invoice_address": "12 Industrial Estate, Ambattur, Chennai, Tamil Nadu - 600058",
+                "subtotal": Decimal("170000"),
+                "gst_amount": Decimal("30600"),
+                "total_amount": Decimal("200600"),
+                "status": "Posted",
+                "remarks": "Demo sale invoice generated from SDC-DEMO-001",
+            },
+            ["invoice_no"],
+        )
+        tax_invoice_id = upsert(
+            cursor,
+            "tax_invoices",
+            {
+                "invoice_no": "TAX-DEMO-001",
+                "invoice_date": TODAY,
+                "customer_id": customer_id,
+                "sales_dc_id": sales_dc_id,
+                "address_type": "billing",
+                "invoice_address": "12 Industrial Estate, Ambattur, Chennai, Tamil Nadu - 600058",
+                "subtotal": Decimal("170000"),
+                "gst_amount": Decimal("30600"),
+                "total_amount": Decimal("200600"),
+                "status": "Posted",
+                "remarks": "Demo tax invoice with Original/Duplicate print copy",
+            },
+            ["invoice_no"],
+        )
+        invoice_items = [
+            {
+                "item_id": fg_id,
+                "qty": Decimal("2"),
+                "rate": Decimal("85000"),
+                "tax_percent": Decimal("18"),
+                "amount": Decimal("170000"),
+            }
+        ]
+        seed_invoice_items(cursor, "sale_invoice_items", "sale_invoice_id", sale_invoice_id, invoice_items)
+        seed_invoice_items(cursor, "tax_invoice_items", "tax_invoice_id", tax_invoice_id, invoice_items)
+        cursor.execute(
+            "UPDATE sales_dc SET linked_invoice_ids = %s, status = %s WHERE id = %s",
+            (Json([sale_invoice_id, tax_invoice_id]), "Invoiced", sales_dc_id),
+        )
+
+        purchase_return_id = upsert(
+            cursor,
+            "purchase_returns",
+            {
+                "return_type": "PO_DC_RETURN",
+                "return_no": "GRN-PO-RT-DEMO-001",
+                "return_date": TODAY,
+                "supplier_id": supplier_id,
+                "purchase_inward_id": inward_id,
+                "reference_no": "INW-DEMO-001",
+                "reference_date": TODAY,
+                "purchase_ledger": "Purchase - Raw Material",
+                "lr_no": "LR-DEMO-001",
+                "so_number": "SO-DEMO-001",
+                "subtotal": Decimal("6500"),
+                "tax_percent": Decimal("18"),
+                "tax_amount": Decimal("1170"),
+                "total_amount": Decimal("7670"),
+                "status": "Posted",
+                "approval_status": "Approved",
+                "remarks": "Rejected MCCB returned to supplier",
+            },
+            ["return_no"],
+        )
+        upsert(
+            cursor,
+            "purchase_return_items",
+            {
+                "purchase_return_id": purchase_return_id,
+                "item_id": rm_breaker_id,
+                "qty": Decimal("1"),
+                "rate": Decimal("6500"),
+                "amount": Decimal("6500"),
+                "net_amount": Decimal("6500"),
+                "rejected_qty": Decimal("1"),
+                "print_code": "RM-MCCB-001",
+            },
+            ["purchase_return_id", "item_id"],
+        )
+
+        print("6/9 Seeding CRM...", flush=True)
         upsert(
             cursor,
             "crm_leads",
@@ -655,7 +904,7 @@ def main():
             ["quotation_no"],
         )
 
-        print("6/8 Seeding subcontractor DC...", flush=True)
+        print("7/9 Seeding subcontractor DC...", flush=True)
         subcontractor_id = upsert(
             cursor,
             "subcontractors",
@@ -708,12 +957,12 @@ def main():
             ["subcontractor_dc_id", "item_id"],
         )
 
-        print("7/8 Committing data...", flush=True)
+        print("8/9 Committing data...", flush=True)
         connection.commit()
-        print("8/8 Complete.", flush=True)
+        print("9/9 Complete.", flush=True)
         print("Demo data loaded successfully.")
         print("Login: admin@zygerdemo.com / Demo@123")
-        print("Flow: CRM -> SO -> BOM -> MRP -> PR -> PO -> Inward -> Quality -> WO -> Production -> FG Stock")
+        print("Flow: CRM -> SO -> BOM -> MRP -> PR -> PO -> Inward -> Quality -> Purchase Return -> WO -> Production -> FG Stock -> Sales DC -> Sale/Tax Invoice -> Subcontractor DC")
     except Exception:
         connection.rollback()
         raise

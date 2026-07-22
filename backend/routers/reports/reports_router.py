@@ -31,6 +31,8 @@ def _fetch_inventory_rows():
     cursor = connection.cursor(cursor_factory=RealDictCursor)
 
     try:
+        cursor.execute("ALTER TABLE inward_inspection_items ADD COLUMN IF NOT EXISTS hold_qty NUMERIC(14,2) DEFAULT 0")
+        cursor.execute("ALTER TABLE inward_inspection_items ADD COLUMN IF NOT EXISTS idle_stock_qty NUMERIC(14,2) DEFAULT 0")
         cursor.execute(
             """
             SELECT
@@ -43,6 +45,9 @@ def _fetch_inventory_rows():
                 i.sales_rate,
                 i.status,
                 COALESCE(sl.balance_qty, 0) AS current_stock,
+                COALESCE(qs.accepted_qty, 0) AS accepted_stock,
+                COALESCE(qs.rejected_qty, 0) AS rejected_stock,
+                COALESCE(qs.idle_stock_qty, 0) AS idle_stock,
                 COALESCE(sl.balance_qty, 0) * COALESCE(i.purchase_rate, 0) AS stock_value
             FROM items i
             LEFT JOIN (
@@ -52,6 +57,15 @@ def _fetch_inventory_rows():
                 FROM stock_ledger
                 ORDER BY item_id, entry_date DESC, id DESC
             ) sl ON sl.item_id = i.id
+            LEFT JOIN (
+                SELECT
+                    item_id,
+                    SUM(COALESCE(accepted_qty, 0)) AS accepted_qty,
+                    SUM(COALESCE(rejected_qty, 0) + COALESCE(hold_qty, 0)) AS rejected_qty,
+                    SUM(COALESCE(idle_stock_qty, 0)) AS idle_stock_qty
+                FROM inward_inspection_items
+                GROUP BY item_id
+            ) qs ON qs.item_id = i.id
             ORDER BY i.item_name ASC
             """
         )
@@ -65,15 +79,24 @@ def _fetch_inventory_rows():
     normalized = []
     total_stock_qty = Decimal("0")
     total_stock_value = Decimal("0")
+    total_accepted_stock = Decimal("0")
+    total_rejected_stock = Decimal("0")
+    total_idle_stock = Decimal("0")
 
     for row in rows:
         current_stock = _decimal(row["current_stock"])
         purchase_rate = _decimal(row["purchase_rate"])
         sales_rate = _decimal(row["sales_rate"])
         stock_value = _decimal(row["stock_value"])
+        accepted_stock = _decimal(row["accepted_stock"])
+        rejected_stock = _decimal(row["rejected_stock"])
+        idle_stock = _decimal(row["idle_stock"])
 
         total_stock_qty += current_stock
         total_stock_value += stock_value
+        total_accepted_stock += accepted_stock
+        total_rejected_stock += rejected_stock
+        total_idle_stock += idle_stock
 
         normalized.append(
             {
@@ -86,6 +109,9 @@ def _fetch_inventory_rows():
                 "sales_rate": float(sales_rate),
                 "status": row["status"],
                 "current_stock": float(current_stock),
+                "accepted_stock": float(accepted_stock),
+                "rejected_stock": float(rejected_stock),
+                "idle_stock": float(idle_stock),
                 "stock_value": float(stock_value),
             }
         )
@@ -93,6 +119,9 @@ def _fetch_inventory_rows():
     return normalized, {
         "total_items": len(normalized),
         "total_stock_qty": total_stock_qty,
+        "accepted_stock": total_accepted_stock,
+        "rejected_stock": total_rejected_stock,
+        "idle_stock": total_idle_stock,
         "total_stock_value": total_stock_value,
     }
 
@@ -712,6 +741,9 @@ def _fetch_inward_inspection_rows():
                 iii.accepted_qty,
                 iii.rejected_qty,
                 iii.rework_qty,
+                iii.hold_qty,
+                iii.hold_number,
+                iii.idle_stock_qty,
                 iii.testing,
                 iii.location,
                 iii.batch_number,
@@ -733,6 +765,8 @@ def _fetch_inward_inspection_rows():
     total_accepted = Decimal("0")
     total_rejected = Decimal("0")
     total_rework = Decimal("0")
+    total_hold = Decimal("0")
+    total_idle = Decimal("0")
     inspection_ids = set()
     normalized = []
 
@@ -741,10 +775,14 @@ def _fetch_inward_inspection_rows():
         accepted_qty = _decimal(row["accepted_qty"])
         rejected_qty = _decimal(row["rejected_qty"])
         rework_qty = _decimal(row["rework_qty"])
+        hold_qty = _decimal(row["hold_qty"])
+        idle_stock_qty = _decimal(row["idle_stock_qty"])
         total_received += received_qty
         total_accepted += accepted_qty
         total_rejected += rejected_qty
         total_rework += rework_qty
+        total_hold += hold_qty
+        total_idle += idle_stock_qty
         inspection_ids.add(row["id"])
 
         normalized.append(
@@ -762,6 +800,9 @@ def _fetch_inward_inspection_rows():
                 "accepted_qty": float(accepted_qty),
                 "rejected_qty": float(rejected_qty),
                 "rework_qty": float(rework_qty),
+                "hold_qty": float(hold_qty),
+                "hold_number": row["hold_number"] or "-",
+                "idle_stock_qty": float(idle_stock_qty),
                 "testing": row["testing"] or "-",
                 "location": row["location"] or "-",
                 "batch_number": row["batch_number"] or "-",
@@ -776,6 +817,8 @@ def _fetch_inward_inspection_rows():
         "accepted_qty": total_accepted,
         "rejected_qty": total_rejected,
         "rework_qty": total_rework,
+        "hold_qty": total_hold,
+        "idle_stock_qty": total_idle,
     }
 
 

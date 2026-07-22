@@ -43,6 +43,7 @@ const PAGE_TITLE_OVERRIDES = [
   ['/process/po', 'Purchase Order'],
   ['/process/pr', 'Purchase Request'],
   ['/process/bom', 'Bill of Material'],
+  ['/process/routesheet', 'Route Sheet'],
   ['/process/mrp', 'Material Requirement Planning'],
   ['/process/production', 'Production'],
   ['/company-info', 'Company Info'],

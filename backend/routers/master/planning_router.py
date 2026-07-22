@@ -34,6 +34,7 @@ MASTER_CONFIG = {
     "item-catalog": {"prefix": "IC", "title": "Item Catalog"},
     "process": {"prefix": "PC", "title": "Process"},
     "process-group": {"prefix": "PG", "title": "Process Group"},
+    "asset-manager": {"prefix": "AST", "title": "Asset Manager"},
 }
 
 

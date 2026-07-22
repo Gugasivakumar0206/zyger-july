@@ -56,6 +56,8 @@ export default function InwardInspectionPage() {
       { key: 'total_accepted_qty', label: 'Accepted Qty', render: (value) => formatQty(value) },
       { key: 'total_rejected_qty', label: 'Rejected Qty', render: (value) => <span className="text-red-600 font-semibold">{formatQty(value)}</span> },
       { key: 'total_rework_qty', label: 'Rework Qty', render: (value) => formatQty(value) },
+      { key: 'total_hold_qty', label: 'Lot Hold Qty', render: (value) => <span className="text-indigo-600 font-semibold">{formatQty(value)}</span> },
+      { key: 'total_idle_stock_qty', label: 'Idle Stock Qty', render: (value) => <span className="text-slate-700 font-semibold">{formatQty(value)}</span> },
       { key: 'status', label: 'Status', render: (value) => <StatusBadge status={value || 'Completed'} /> },
     ],
     []
@@ -66,10 +68,12 @@ export default function InwardInspectionPage() {
       (acc, row) => {
         acc.total += 1
         acc.received += Number(row.total_qty || 0)
+        acc.accepted += Number(row.total_accepted_qty || 0)
         acc.rejected += Number(row.total_rejected_qty || 0)
+        acc.idle += Number(row.total_idle_stock_qty || 0)
         return acc
       },
-      { total: 0, received: 0, rejected: 0 }
+      { total: 0, received: 0, accepted: 0, rejected: 0, idle: 0 }
     )
   }, [rows])
 
@@ -97,7 +101,7 @@ export default function InwardInspectionPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-5">
         <div className="card">
           <p className="text-xs text-slate-500">Total Inspections</p>
           <p className="text-2xl font-bold text-slate-800">{summary.total}</p>
@@ -107,8 +111,16 @@ export default function InwardInspectionPage() {
           <p className="text-2xl font-bold text-slate-800">{formatQty(summary.received)}</p>
         </div>
         <div className="card">
+          <p className="text-xs text-slate-500">Accepted Qty</p>
+          <p className="text-2xl font-bold text-green-700">{formatQty(summary.accepted)}</p>
+        </div>
+        <div className="card">
           <p className="text-xs text-slate-500">Total Rejected Qty</p>
           <p className="text-2xl font-bold text-red-600">{formatQty(summary.rejected)}</p>
+        </div>
+        <div className="card">
+          <p className="text-xs text-slate-500">Idle Stock Qty</p>
+          <p className="text-2xl font-bold text-slate-700">{formatQty(summary.idle)}</p>
         </div>
       </div>
 

@@ -6,3 +6,7 @@ backend/.env
 outputs/
 certbot/conf/
 *.pyc
+backend-java/target/
+backend-java/*.log
+logs/
+

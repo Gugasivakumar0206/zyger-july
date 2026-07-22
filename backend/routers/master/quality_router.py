@@ -17,6 +17,9 @@ class InwardInspectionItemPayload(BaseModel):
     received_qty: str
     rejected_qty: Optional[str] = "0"
     rework_qty: Optional[str] = "0"
+    hold_qty: Optional[str] = "0"
+    hold_number: Optional[str] = None
+    idle_stock_qty: Optional[str] = "0"
     testing: Optional[str] = None
     location: Optional[str] = None
     batch_number: Optional[str] = None
@@ -137,6 +140,9 @@ def _ensure_quality_tables(cursor):
             accepted_qty NUMERIC(14,2) DEFAULT 0,
             rejected_qty NUMERIC(14,2) DEFAULT 0,
             rework_qty NUMERIC(14,2) DEFAULT 0,
+            hold_qty NUMERIC(14,2) DEFAULT 0,
+            hold_number VARCHAR(100),
+            idle_stock_qty NUMERIC(14,2) DEFAULT 0,
             testing VARCHAR(100),
             location VARCHAR(100),
             batch_number VARCHAR(100),
@@ -158,6 +164,9 @@ def _ensure_quality_tables(cursor):
         ADD COLUMN IF NOT EXISTS location VARCHAR(150)
         """
     )
+    cursor.execute("ALTER TABLE inward_inspection_items ADD COLUMN IF NOT EXISTS hold_qty NUMERIC(14,2) DEFAULT 0")
+    cursor.execute("ALTER TABLE inward_inspection_items ADD COLUMN IF NOT EXISTS hold_number VARCHAR(100)")
+    cursor.execute("ALTER TABLE inward_inspection_items ADD COLUMN IF NOT EXISTS idle_stock_qty NUMERIC(14,2) DEFAULT 0")
 
 
 def _next_inspection_no(cursor):
@@ -214,6 +223,11 @@ def _fetch_source_headers(cursor, inward_type: str):
             pi.invoice_no,
             pi.inward_type,
             pi.extra_data,
+            s.supplier_code,
+            s.supplier_name,
+            s.gstin AS supplier_gstin,
+            s.mobile AS supplier_mobile,
+            s.email AS supplier_email,
             COALESCE(s.supplier_name, c.customer_name, '-') AS company_name
         FROM purchase_inward pi
         LEFT JOIN suppliers s ON s.id = pi.supplier_id
@@ -238,6 +252,11 @@ def _fetch_source_detail(cursor, purchase_inward_id: int):
             pi.invoice_no,
             pi.inward_type,
             pi.extra_data,
+            s.supplier_code,
+            s.supplier_name,
+            s.gstin AS supplier_gstin,
+            s.mobile AS supplier_mobile,
+            s.email AS supplier_email,
             COALESCE(s.supplier_name, c.customer_name, '-') AS company_name
         FROM purchase_inward pi
         LEFT JOIN suppliers s ON s.id = pi.supplier_id
@@ -452,9 +471,26 @@ def list_inward_inspections():
                 ii.total_accepted_qty,
                 ii.total_rejected_qty,
                 ii.total_rework_qty,
+                COALESCE(SUM(iii.hold_qty), 0) AS total_hold_qty,
+                COALESCE(SUM(iii.idle_stock_qty), 0) AS total_idle_stock_qty,
                 ii.created_by,
                 ii.created_at
             FROM inward_inspections ii
+            LEFT JOIN inward_inspection_items iii ON iii.inspection_id = ii.id
+            GROUP BY
+                ii.id,
+                ii.inspection_no,
+                ii.inspection_date,
+                ii.inward_type,
+                ii.company_name,
+                ii.inward_no,
+                ii.status,
+                ii.total_qty,
+                ii.total_accepted_qty,
+                ii.total_rejected_qty,
+                ii.total_rework_qty,
+                ii.created_by,
+                ii.created_at
             ORDER BY ii.id DESC
             """
         )
@@ -515,6 +551,9 @@ def get_inward_inspection(inspection_id: int):
                 iii.accepted_qty,
                 iii.rejected_qty,
                 iii.rework_qty,
+                iii.hold_qty,
+                iii.hold_number,
+                iii.idle_stock_qty,
                 iii.testing,
                 iii.location,
                 iii.batch_number,
@@ -573,11 +612,15 @@ def create_inward_inspection(payload: InwardInspectionPayload):
             received_qty = _decimal(row.received_qty or source["qty"])
             rejected_qty = _decimal(row.rejected_qty)
             rework_qty = _decimal(row.rework_qty)
+            hold_qty = _decimal(row.hold_qty)
+            idle_stock_qty = _decimal(row.idle_stock_qty)
             tolerance = _decimal(row.tolerance)
-            accepted_qty = received_qty - rejected_qty - rework_qty
+            accepted_qty = received_qty - rejected_qty - rework_qty - hold_qty - idle_stock_qty
 
             if accepted_qty < 0:
                 raise HTTPException(status_code=400, detail="Accepted quantity cannot be negative")
+            if hold_qty > 0 and not str(row.hold_number or "").strip():
+                raise HTTPException(status_code=400, detail="Hold number is required when lot hold quantity is entered")
             if (accepted_qty > 0 or rejected_qty > 0 or rework_qty > 0) and not str(row.location or "").strip():
                 raise HTTPException(status_code=400, detail="Store / location is required for every inspected item")
 
@@ -596,6 +639,9 @@ def create_inward_inspection(payload: InwardInspectionPayload):
                     "accepted_qty": accepted_qty,
                     "rejected_qty": rejected_qty,
                     "rework_qty": rework_qty,
+                    "hold_qty": hold_qty,
+                    "hold_number": row.hold_number or "",
+                    "idle_stock_qty": idle_stock_qty,
                     "testing": row.testing or "QUALITY CHECK",
                     "location": row.location or "",
                     "batch_number": row.batch_number or "",
@@ -639,10 +685,10 @@ def create_inward_inspection(payload: InwardInspectionPayload):
                 """
                 INSERT INTO inward_inspection_items (
                     inspection_id, purchase_inward_item_id, item_id, tolerance, uom,
-                    received_qty, accepted_qty, rejected_qty, rework_qty, testing,
+                    received_qty, accepted_qty, rejected_qty, rework_qty, hold_qty, hold_number, idle_stock_qty, testing,
                     location, batch_number, remark, attachment
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     created["id"],
@@ -654,6 +700,9 @@ def create_inward_inspection(payload: InwardInspectionPayload):
                     row["accepted_qty"],
                     row["rejected_qty"],
                     row["rework_qty"],
+                    row["hold_qty"],
+                    row["hold_number"],
+                    row["idle_stock_qty"],
                     row["testing"],
                     row["location"],
                     row["batch_number"],

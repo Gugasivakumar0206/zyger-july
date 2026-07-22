@@ -63,6 +63,7 @@ export default function TaxInvoicePrintPage() {
   const taxAmount = Number(record.gst_amount || 0)
   const netAmount = Number(record.total_amount || taxableAmount + taxAmount)
   const invoiceItems = record.items?.length ? record.items : [record]
+  const copyLabels = ['ORIGINAL COPY', 'DUPLICATE FOR TRANSPORTER']
 
   return (
     <>
@@ -73,6 +74,7 @@ export default function TaxInvoicePrintPage() {
           body { background: white; }
           .print-toolbar { display: none !important; }
           .print-shell { margin: 0 !important; box-shadow: none !important; }
+          .print-copy + .print-copy { break-before: page; page-break-before: always; }
         }
       `}</style>
 
@@ -82,9 +84,10 @@ export default function TaxInvoicePrintPage() {
         </button>
       </div>
 
-      <div className="print-shell" style={{ width: '840px', margin: '0 auto 24px', background: 'white', boxShadow: '0 12px 40px rgba(15,23,42,0.15)', border: '1px solid #d1d5db' }}>
+      {copyLabels.map((copyLabel) => (
+      <div key={copyLabel} className="print-shell print-copy" style={{ width: '840px', margin: '0 auto 24px', background: 'white', boxShadow: '0 12px 40px rgba(15,23,42,0.15)', border: '1px solid #d1d5db' }}>
         <div style={{ padding: '18px 22px' }}>
-          <div style={{ textAlign: 'right', fontSize: '14px', marginBottom: '8px' }}>ORIGINAL COPY</div>
+          <div style={{ textAlign: 'right', fontSize: '14px', marginBottom: '8px', fontWeight: 800 }}>{copyLabel}</div>
           <div style={{ border: '1px solid #4b5563' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '88px 1fr', gap: '14px', alignItems: 'center', padding: '14px', borderBottom: '1px solid #4b5563' }}>
               <div style={{ width: '76px', height: '76px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -102,7 +105,7 @@ export default function TaxInvoicePrintPage() {
               </div>
             </div>
             <div style={{ background: '#bde7f3', borderBottom: '1px solid #4b5563', textAlign: 'center', fontSize: '20px', fontWeight: 800, padding: '6px 0' }}>
-              TAX INVOICE
+              TAX E-INVOICE / TAX INVOICE
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
               <div style={{ borderRight: '1px solid #4b5563', borderBottom: '1px solid #4b5563', padding: '10px 12px' }}>
@@ -159,6 +162,16 @@ export default function TaxInvoicePrintPage() {
                   </tr>
                 ))}
                 <tr>
+                  <td style={{ borderLeft: '1px solid #4b5563', borderRight: '1px solid #4b5563', height: '260px' }} />
+                  <td style={{ borderRight: '1px solid #4b5563' }} />
+                  <td style={{ borderRight: '1px solid #4b5563' }} />
+                  <td style={{ borderRight: '1px solid #4b5563' }} />
+                  <td style={{ borderRight: '1px solid #4b5563' }} />
+                  <td style={{ borderRight: '1px solid #4b5563' }} />
+                  <td style={{ borderRight: '1px solid #4b5563' }} />
+                  <td style={{ borderRight: '1px solid #4b5563' }} />
+                </tr>
+                <tr>
                   <td colSpan="3" style={{ border: '1px solid #4b5563', padding: '8px 6px', textAlign: 'right', fontWeight: 800 }}>Qty</td>
                   <td style={{ border: '1px solid #4b5563', padding: '8px 6px', textAlign: 'right', fontWeight: 800 }}>{formatMoney(invoiceItems.reduce((sum, item) => sum + Number(item.qty || 0), 0))}</td>
                   <td colSpan="3" style={{ border: '1px solid #4b5563', padding: '8px 6px', textAlign: 'right', fontWeight: 800 }}>Amount(Rs)</td>
@@ -203,6 +216,7 @@ export default function TaxInvoicePrintPage() {
           </div>
         </div>
       </div>
+      ))}
     </>
   )
 }

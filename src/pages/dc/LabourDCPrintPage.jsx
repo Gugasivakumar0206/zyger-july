@@ -23,6 +23,22 @@ export default function LabourDCPrintPage() {
     return MOCK_DC.find((row) => String(row.id) === String(id)) || MOCK_DC[0]
   }, [id])
 
+  const company = COMPANY_PROFILE
+  const itemRows = [
+    {
+      itemCode: record.referenceNumber || record.dcNumber,
+      itemName: record.itemName || record.referenceNumber || record.dcNumber,
+      hsn: record.hsnCode || '998898',
+      sac: '',
+      refDc: record.referenceNumber || '-',
+      qty: record.qty || '1.00',
+      uom: record.uom || 'NOS',
+      remarks: record.modeOfTransport || 'BY ROAD',
+    },
+  ]
+  const totalQty = itemRows.reduce((sum, item) => sum + Number(item.qty || 0), 0)
+  const copyLabels = ['ORIGINAL COPY', 'DUPLICATE FOR TRANSPORTER']
+
   return (
     <>
       <style>{`
@@ -32,6 +48,7 @@ export default function LabourDCPrintPage() {
           body { background: white; }
           .print-toolbar { display: none !important; }
           .print-shell { margin: 0 !important; box-shadow: none !important; }
+          .print-copy + .print-copy { break-before: page; page-break-before: always; }
         }
       `}</style>
 
@@ -41,34 +58,39 @@ export default function LabourDCPrintPage() {
         </button>
       </div>
 
-      <div className="print-shell" style={{ width: '840px', margin: '0 auto 24px', background: 'white', boxShadow: '0 12px 40px rgba(15,23,42,0.15)', border: '1px solid #d1d5db' }}>
+      {copyLabels.map((copyLabel) => (
+      <div key={copyLabel} className="print-shell print-copy" style={{ width: '840px', margin: '0 auto 24px', background: 'white', boxShadow: '0 12px 40px rgba(15,23,42,0.15)', border: '1px solid #d1d5db' }}>
         <div style={{ padding: '18px 22px' }}>
-          <div style={{ border: '1px solid #4b5563' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '88px 1fr', gap: '14px', alignItems: 'center', padding: '14px', borderBottom: '1px solid #4b5563' }}>
-              <div style={{ width: '76px', height: '76px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <img src={logo} alt={COMPANY_PROFILE.logoAlt} style={{ width: '68px', height: '68px', objectFit: 'contain' }} />
+          <div style={{ textAlign: 'right', fontSize: '14px', marginBottom: '8px', fontWeight: 800 }}>{copyLabel}</div>
+          <div style={{ border: '1px solid #111827', color: '#111827' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr 130px', alignItems: 'center', padding: '10px 12px 14px', minHeight: '118px', borderBottom: '1px solid #111827' }}>
+              <div style={{ width: '112px', height: '92px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img src={logo} alt={company.logoAlt} style={{ width: '104px', height: '88px', objectFit: 'contain' }} />
               </div>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '28px', fontWeight: 800 }}>{COMPANY_PROFILE.name}</div>
-                <div style={{ fontSize: '13px', marginTop: '4px' }}>{COMPANY_PROFILE.address}</div>
-                <div style={{ fontSize: '13px', marginTop: '6px', fontWeight: 700 }}>
-                  PAN No: {COMPANY_PROFILE.pan} , GSTIN: {COMPANY_PROFILE.gstin}
+                <div style={{ fontSize: '30px', fontWeight: 900, letterSpacing: '0.4px' }}>{company.name}</div>
+                <div style={{ fontSize: '13px', marginTop: '4px', lineHeight: 1.35 }}>{company.address}</div>
+                <div style={{ fontSize: '14px', marginTop: '6px', fontWeight: 800 }}>
+                  PAN No: {company.pan} , GSTIN: {company.gstin}
                 </div>
-                <div style={{ fontSize: '13px', marginTop: '4px' }}>
-                  Email id: {COMPANY_PROFILE.email} &nbsp;&nbsp; Phone No: {COMPANY_PROFILE.phone}
+                <div style={{ fontSize: '14px', marginTop: '4px', fontWeight: 700 }}>
+                  Email id : {company.email} &nbsp;&nbsp; Phone No : {company.phone}
                 </div>
               </div>
+              <div />
             </div>
-            <div style={{ background: '#bde7f3', borderBottom: '1px solid #4b5563', textAlign: 'center', fontSize: '20px', fontWeight: 800, padding: '6px 0' }}>
+            <div style={{ background: '#bde7f3', borderBottom: '1px solid #111827', textAlign: 'center', fontSize: '20px', fontWeight: 900, padding: '4px 0' }}>
               LABOUR DC
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 0.85fr', borderBottom: '1px solid #4b5563' }}>
-              <div style={{ borderRight: '1px solid #4b5563', padding: '10px 12px', minHeight: '130px' }}>
-                <div style={{ fontSize: '16px', fontWeight: 800, marginBottom: '8px' }}>To</div>
-                <div><strong>M/s</strong> {record.customer || '-'}</div>
-                <div style={{ marginTop: '8px' }}>Address : -</div>
-                <div style={{ marginTop: '8px' }}>Vendor Code : -</div>
-                <div style={{ marginTop: '8px' }}>e-way Bill-No : -</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 0.85fr', borderBottom: '1px solid #111827' }}>
+              <div style={{ borderRight: '1px solid #111827', padding: '8px 10px', minHeight: '140px', fontSize: '14px', lineHeight: 1.35 }}>
+                <div style={{ fontSize: '15px', fontWeight: 900 }}>To</div>
+                <div style={{ marginTop: '2px' }}>
+                  <strong>M/s. {record.customer || '-'}</strong>
+                </div>
+                <div style={{ marginTop: '6px' }}>{record.address || '#31-C1, Veerasandra Industrial Area, Hosur Road, Attibele Hobli, Anekal Taluk, Bengaluru, Karnataka - 560100'}</div>
+                <div style={{ marginTop: '8px' }}><strong>Vendor Code :</strong> {record.vendorCode || '-'}</div>
+                <div><strong>e-way Bill-No :</strong> {record.ewayBillNo || '-'}</div>
               </div>
               <div style={{ padding: 0 }}>
                 {[
@@ -79,9 +101,9 @@ export default function LabourDCPrintPage() {
                   ['Mode of Transport', 'By Road'],
                   ['Vehicle No', '-'],
                 ].map(([label, value]) => (
-                  <div key={label} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid #4b5563' }}>
-                    <div style={{ padding: '10px 12px', fontWeight: 700, borderRight: '1px solid #4b5563' }}>{label}</div>
-                    <div style={{ padding: '10px 12px', fontWeight: 700, color: label === 'DC No.' || label === 'DC Date' ? '#dc2626' : '#111827' }}>{value}</div>
+                  <div key={label} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid #111827' }}>
+                    <div style={{ padding: '7px 9px', fontWeight: 700, borderRight: '1px solid #111827' }}>{label}</div>
+                    <div style={{ padding: '7px 9px', fontWeight: 800, color: label === 'DC No.' || label === 'DC Date' ? '#dc2626' : '#111827' }}>{value}</div>
                   </div>
                 ))}
               </div>
@@ -89,53 +111,71 @@ export default function LabourDCPrintPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#bde7f3' }}>
-                  {['S.No', 'Particulars', 'HSN', 'SAC', 'Ref DC(Qty):Dt.', 'Qty', 'Remarks'].map((label) => (
-                    <th key={label} style={{ border: '1px solid #4b5563', padding: '8px 6px', fontSize: '13px', fontWeight: 800 }}>{label}</th>
-                  ))}
+                  <th style={{ border: '1px solid #111827', padding: '8px 6px', fontSize: '13px', fontWeight: 900, width: '62px' }}>S.No</th>
+                  <th style={{ border: '1px solid #111827', padding: '8px 6px', fontSize: '13px', fontWeight: 900 }}>Particulars</th>
+                  <th style={{ border: '1px solid #111827', padding: '8px 6px', fontSize: '13px', fontWeight: 900, width: '92px' }}>HSN</th>
+                  <th style={{ border: '1px solid #111827', padding: '8px 6px', fontSize: '13px', fontWeight: 900, width: '92px' }}>SAC</th>
+                  <th style={{ border: '1px solid #111827', padding: '8px 6px', fontSize: '13px', fontWeight: 900, width: '130px' }}>Ref<br />DC(Qty):Dt.</th>
+                  <th style={{ border: '1px solid #111827', padding: '8px 6px', fontSize: '13px', fontWeight: 900, width: '110px' }}>Qty</th>
+                  <th style={{ border: '1px solid #111827', padding: '8px 6px', fontSize: '13px', fontWeight: 900, width: '190px' }}>Remarks</th>
                 </tr>
               </thead>
               <tbody>
+                {itemRows.map((item, index) => (
+                  <tr key={`${item.itemCode}-${index}`}>
+                    <td style={{ border: '1px solid #111827', padding: '8px 6px', textAlign: 'center', verticalAlign: 'top' }}>{index + 1}</td>
+                    <td style={{ border: '1px solid #111827', padding: '8px 6px', verticalAlign: 'top' }}>
+                      <strong>{item.itemCode}</strong> - {item.itemName}
+                    </td>
+                    <td style={{ border: '1px solid #111827', padding: '8px 6px', textAlign: 'center', verticalAlign: 'top' }}>{item.hsn}</td>
+                    <td style={{ border: '1px solid #111827', padding: '8px 6px', textAlign: 'center', verticalAlign: 'top' }}>{item.sac || '-'}</td>
+                    <td style={{ border: '1px solid #111827', padding: '8px 6px', textAlign: 'center', verticalAlign: 'top' }}>{item.refDc}</td>
+                    <td style={{ border: '1px solid #111827', padding: '8px 6px', textAlign: 'right', verticalAlign: 'top' }}>{Number(item.qty || 0).toFixed(2)} {item.uom}</td>
+                    <td style={{ border: '1px solid #111827', padding: '8px 6px', verticalAlign: 'top' }}>{item.remarks}</td>
+                  </tr>
+                ))}
                 <tr>
-                  <td style={{ border: '1px solid #4b5563', padding: '8px 6px', textAlign: 'center' }}>1</td>
-                  <td style={{ border: '1px solid #4b5563', padding: '8px 6px' }}>{record.referenceNumber || record.dcNumber}</td>
-                  <td style={{ border: '1px solid #4b5563', padding: '8px 6px', textAlign: 'center' }}>-</td>
-                  <td style={{ border: '1px solid #4b5563', padding: '8px 6px', textAlign: 'center' }}>-</td>
-                  <td style={{ border: '1px solid #4b5563', padding: '8px 6px', textAlign: 'center' }}>{record.referenceNumber || '-'}</td>
-                  <td style={{ border: '1px solid #4b5563', padding: '8px 6px', textAlign: 'right' }}>1.00 NOS</td>
-                  <td style={{ border: '1px solid #4b5563', padding: '8px 6px' }}>BY ROAD</td>
+                  <td style={{ borderLeft: '1px solid #111827', borderRight: '1px solid #111827', height: '520px' }} />
+                  <td style={{ borderRight: '1px solid #111827' }} />
+                  <td style={{ borderRight: '1px solid #111827' }} />
+                  <td style={{ borderRight: '1px solid #111827' }} />
+                  <td style={{ borderRight: '1px solid #111827' }} />
+                  <td style={{ borderRight: '1px solid #111827' }} />
+                  <td style={{ borderRight: '1px solid #111827' }} />
                 </tr>
                 <tr>
-                  <td colSpan="5" style={{ border: '1px solid #4b5563', padding: '8px 6px', textAlign: 'right', fontWeight: 800 }}>Total Qty</td>
-                  <td style={{ border: '1px solid #4b5563', padding: '8px 6px', textAlign: 'right', fontWeight: 800 }}>1.00</td>
-                  <td style={{ border: '1px solid #4b5563' }} />
+                  <td colSpan="5" style={{ border: '1px solid #111827', padding: '8px 6px', textAlign: 'right', fontWeight: 900 }}>Total Qty</td>
+                  <td style={{ border: '1px solid #111827', padding: '8px 6px', textAlign: 'right', fontWeight: 900 }}>{totalQty.toFixed(2)}</td>
+                  <td style={{ border: '1px solid #111827' }} />
                 </tr>
               </tbody>
             </table>
-            <div style={{ borderBottom: '1px solid #4b5563', minHeight: '120px', padding: '10px 12px' }}>
-              <div style={{ fontWeight: 800 }}>Terms and Conditions:</div>
+            <div style={{ borderBottom: '1px solid #111827', minHeight: '120px', padding: '8px 10px' }}>
+              <div style={{ fontWeight: 900 }}>Terms and Conditions:</div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', minHeight: '150px' }}>
-              <div style={{ borderRight: '1px solid #4b5563', padding: '10px 12px', fontSize: '13px', lineHeight: 1.7 }}>
-                <div><strong>OUR GSTIN :</strong> {COMPANY_PROFILE.gstin}</div>
-                <div><strong>OUR PAN :</strong> {COMPANY_PROFILE.pan}</div>
+              <div style={{ borderRight: '1px solid #111827', padding: '8px 10px', fontSize: '13px', lineHeight: 1.55 }}>
+                <div><strong>OUR GSTIN :</strong> {company.gstin}</div>
+                <div><strong>OUR PAN :</strong> {company.pan}</div>
                 <div><strong>Party&apos;s GSTIN :</strong> -</div>
                 <div><strong>Party&apos;s PAN :</strong> -</div>
               </div>
-              <div style={{ borderRight: '1px solid #4b5563', padding: '10px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div style={{ fontWeight: 800 }}>Received Items in Good Condition</div>
+              <div style={{ borderRight: '1px solid #111827', padding: '8px 10px', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div style={{ fontWeight: 900 }}>Received Items in Good Condition</div>
                 <div>
-                  <div style={{ fontWeight: 700 }}>Receiver&apos;s Signature</div>
+                  <div style={{ fontWeight: 800 }}>Receiver&apos;s Signature</div>
                   <div style={{ marginTop: '10px', fontSize: '12px' }}>This is Computer Generated DC</div>
                 </div>
               </div>
               <div style={{ padding: '10px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div style={{ fontWeight: 800 }}>For {COMPANY_PROFILE.name}</div>
-                <div style={{ fontWeight: 700 }}>Authorised Signatory</div>
+                <div style={{ fontWeight: 900 }}>for {company.name}</div>
+                <div style={{ fontWeight: 800 }}>Authorised Signatory</div>
               </div>
             </div>
           </div>
         </div>
       </div>
+      ))}
     </>
   )
 }
