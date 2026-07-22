@@ -37,3 +37,9 @@ spring:
     password: ${PGPASSWORD}
     driver-class-name: org.postgresql.Driver
 
+
+  sql:
+    init:
+      mode: always
+      continue-on-error: true
+
