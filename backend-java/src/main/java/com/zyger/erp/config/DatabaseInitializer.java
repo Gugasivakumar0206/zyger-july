@@ -41,6 +41,7 @@ public class DatabaseInitializer {
                 statement.execute("ALTER TABLE inward_inspection_items ADD COLUMN IF NOT EXISTS location VARCHAR(200)");
                 statement.execute("ALTER TABLE purchase_inward ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Received'");
                 statement.execute("ALTER TABLE sales_dc ADD COLUMN IF NOT EXISTS po_number VARCHAR(100)");
+                statement.execute("ALTER TABLE items ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'Active'");
             }
         };
     }

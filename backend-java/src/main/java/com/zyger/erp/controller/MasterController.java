@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.math.BigDecimal;
 
 @RestController
 public class MasterController {
@@ -107,8 +108,8 @@ public class MasterController {
             """,
             payload.getOrDefault("itemType", "Purchasable Item"), payload.get("itemCode"), payload.get("itemName"),
             payload.get("printName"), payload.get("itemGroup"), payload.get("uom"), payload.get("hsnCode"),
-            payload.get("rack"), payload.get("bin"), payload.get("purchaseRate"), payload.get("salesRate"),
-            payload.getOrDefault("gstPercent", 18), payload.getOrDefault("status", "Active")
+            payload.get("rack"), payload.get("bin"), decimal(payload.get("purchaseRate")), decimal(payload.get("salesRate")),
+            decimal(payload.getOrDefault("gstPercent", 18)), payload.getOrDefault("status", "Active")
         );
         return ApiResponse.ok("Item created successfully");
     }
@@ -116,5 +117,10 @@ public class MasterController {
     @GetMapping("/company/")
     public Map<String, Object> company() {
         return Map.of("company", Rows.one(jdbc, "select * from company_info order by id asc limit 1"));
+    }
+
+    private BigDecimal decimal(Object value) {
+        if (value == null || String.valueOf(value).isBlank()) return BigDecimal.ZERO;
+        return new BigDecimal(String.valueOf(value));
     }
 }
