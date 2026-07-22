@@ -4,6 +4,8 @@ import com.zyger.erp.support.ApiResponse;
 import com.zyger.erp.support.Rows;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -106,24 +108,74 @@ public class LegacyCompatController {
         return java.util.Map.of("success", true, "message", type + " updated successfully", "document", processDetail(type, id));
     }
 
+
     @PostMapping("/planning/process/{type}/{id}/run-mrp")
     public Map<String, Object> runMrp(@PathVariable String type, @PathVariable long id) {
-        if (!"so".equals(type)) return ApiResponse.ok("MRP can be generated from Sales Order only");
+        if (!"so".equals(type)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "MRP can be generated from Sales Order only");
         Map<String, Object> so = processDetail("so", id);
+        java.util.List<Map<String, Object>> soItems = asList(so.getOrDefault("items", java.util.List.of()));
+        if (soItems.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Sales Order has no manufacturing item lines");
+
         String mrpNo = nextProcessNumber("mrp").get("nextNumber");
-        String prNo = nextProcessNumber("pr").get("nextNumber");
-        Object soItems = so.getOrDefault("items", java.util.List.of());
+        java.util.List<Map<String, Object>> materialLines = new java.util.ArrayList<>();
+        java.util.List<Map<String, Object>> shortageLines = new java.util.ArrayList<>();
+        java.util.List<String> usedBoms = new java.util.ArrayList<>();
+
+        for (Map<String, Object> soLine : soItems) {
+            String fgCode = lineValue(soLine, "itemCode", "item_code", "");
+            if (fgCode.isBlank()) fgCode = String.valueOf(so.getOrDefault("reference_no", ""));
+            double salesQty = decimal(soLine.getOrDefault("quantity", soLine.getOrDefault("qty", 1)));
+            if (salesQty <= 0) salesQty = 1;
+
+            Map<String, Object> bom = activeBomForFg(fgCode);
+            if (bom.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Active Master BOM not found for FG item " + fgCode);
+            usedBoms.add(String.valueOf(bom.getOrDefault("document_no", "")));
+
+            for (Map<String, Object> component : asList(bom.getOrDefault("items", java.util.List.of()))) {
+                String itemCode = lineValue(component, "itemCode", "item_code", "");
+                String itemName = lineValue(component, "itemName", "item_name", itemCode);
+                double bomQty = decimal(component.getOrDefault("quantity", component.getOrDefault("qty", 0)));
+                double requiredQty = bomQty * salesQty;
+                double availableQty = latestStockForCode(itemCode);
+                double shortageQty = Math.max(0, requiredQty - availableQty);
+                java.util.Map<String, Object> row = new java.util.LinkedHashMap<>();
+                row.put("fgItemCode", fgCode);
+                row.put("bomNo", bom.getOrDefault("document_no", ""));
+                row.put("itemCode", itemCode);
+                row.put("itemName", itemName);
+                row.put("requiredQty", requiredQty);
+                row.put("availableQty", availableQty);
+                row.put("shortageQty", shortageQty);
+                row.put("uom", component.getOrDefault("uom", ""));
+                row.put("status", shortageQty > 0 ? "Shortage" : "Available");
+                materialLines.add(row);
+                if (shortageQty > 0) shortageLines.add(row);
+            }
+        }
+
         jdbc.update("""
             insert into erp_process_documents(process_type, document_no, reference_no, order_number, order_type, department, status, approval_status, remarks, extra_data, items)
-            values('mrp', ?, ?, ?, 'Sales Order', 'Planning', 'Completed', 'Approved', 'MRP generated from Sales Order and active BOM', ?::jsonb, ?::jsonb)
-            """, mrpNo, so.get("document_no"), so.get("document_no"), json(java.util.Map.of("sourceSoId", id)), json(soItems));
+            values('mrp', ?, ?, ?, 'Sales Order', 'Planning', ?, 'Approved', 'MRP exploded from active Master BOM and checked against stock', ?::jsonb, ?::jsonb)
+            """, mrpNo, so.get("document_no"), so.get("document_no"), shortageLines.isEmpty() ? "Completed - No Shortage" : "Shortage Found",
+            json(java.util.Map.of("sourceSoId", id, "usedBoms", usedBoms)), json(materialLines));
         Long mrpId = jdbc.queryForObject("select max(id) from erp_process_documents where process_type='mrp' and document_no=?", Long.class, mrpNo);
-        jdbc.update("""
-            insert into erp_process_documents(process_type, document_no, reference_no, order_number, order_type, department, status, approval_status, remarks, extra_data, items)
-            values('pr', ?, ?, ?, 'Purchase Request', 'Purchase', 'Open', '', 'Auto PR generated from MRP shortage', ?::jsonb, ?::jsonb)
-            """, prNo, mrpNo, so.get("document_no"), json(java.util.Map.of("sourceMrpId", mrpId)), json(soItems));
-        Long prId = jdbc.queryForObject("select max(id) from erp_process_documents where process_type='pr' and document_no=?", Long.class, prNo);
-        return java.util.Map.of("success", true, "message", "MRP and PR generated successfully", "mrp", processDetail("mrp", mrpId), "purchaseRequest", processDetail("pr", prId), "analysis", soItems);
+
+        java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("success", true);
+        result.put("message", shortageLines.isEmpty() ? "MRP completed. No PR required." : "MRP completed. PR generated for shortages.");
+        result.put("mrp", processDetail("mrp", mrpId));
+        result.put("analysis", materialLines);
+
+        if (!shortageLines.isEmpty()) {
+            String prNo = nextProcessNumber("pr").get("nextNumber");
+            jdbc.update("""
+                insert into erp_process_documents(process_type, document_no, reference_no, order_number, order_type, department, status, approval_status, remarks, extra_data, items)
+                values('pr', ?, ?, ?, 'Purchase Request', 'Purchase', 'Open', '', 'Auto PR generated from MRP shortage', ?::jsonb, ?::jsonb)
+                """, prNo, mrpNo, so.get("document_no"), json(java.util.Map.of("sourceMrpId", mrpId)), json(shortageLines));
+            Long prId = jdbc.queryForObject("select max(id) from erp_process_documents where process_type='pr' and document_no=?", Long.class, prNo);
+            result.put("purchaseRequest", processDetail("pr", prId));
+        }
+        return result;
     }
 
     @PostMapping("/planning/process/{type}/{id}/generate-work-order")
@@ -131,27 +183,17 @@ public class LegacyCompatController {
         Map<String, Object> source = processDetail(type, id);
         String woNo = nextProcessNumber("wo").get("nextNumber");
         String sourceNo = String.valueOf(source.getOrDefault("document_no", ""));
-        Object sourceLines = source.getOrDefault("items", java.util.List.of());
+        java.util.List<Map<String, Object>> sourceLines = asList(source.getOrDefault("items", java.util.List.of()));
         String fgCode = String.valueOf(source.getOrDefault("reference_no", ""));
-        if (sourceLines instanceof java.util.List<?> list && !list.isEmpty() && list.get(0) instanceof java.util.Map<?, ?> firstLine) {
-            Object itemCode = firstLine.get("itemCode");
-            if (itemCode == null) itemCode = firstLine.get("item_code");
-            if (itemCode != null && !String.valueOf(itemCode).isBlank()) fgCode = String.valueOf(itemCode);
+        if (!sourceLines.isEmpty()) {
+            String itemCode = lineValue(sourceLines.get(0), "itemCode", "item_code", "");
+            if (!itemCode.isBlank()) fgCode = itemCode;
         }
 
-        java.util.List<Map<String, Object>> bomRows = Rows.list(jdbc, """
-            select * from erp_process_documents
-            where process_type='bom' and reference_no=? and coalesce(status,'Active') in ('Active','Released')
-            order by id desc limit 1
-            """, fgCode);
-        java.util.Map<String, Object> bom = bomRows.isEmpty() ? java.util.Map.of() : bomRows.get(0);
-
-        java.util.List<Map<String, Object>> routeRows = Rows.list(jdbc, """
-            select * from erp_process_documents
-            where process_type='routesheet' and reference_no=? and coalesce(status,'Released') in ('Active','Released')
-            order by id desc limit 1
-            """, fgCode);
-        java.util.Map<String, Object> routeSheet = routeRows.isEmpty() ? java.util.Map.of() : routeRows.get(0);
+        java.util.Map<String, Object> bom = activeBomForFg(fgCode);
+        if (bom.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Work Order cannot be generated. Active Master BOM missing for " + fgCode);
+        java.util.Map<String, Object> routeSheet = activeRouteForFg(fgCode);
+        if (routeSheet.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Work Order cannot be generated. Active Route Sheet missing for " + fgCode);
 
         java.util.Map<String, Object> extra = new java.util.LinkedHashMap<>();
         extra.put("sourceType", type);
@@ -161,10 +203,11 @@ public class LegacyCompatController {
         extra.put("routeSheetNo", routeSheet.getOrDefault("document_no", ""));
         extra.put("materialLines", bom.getOrDefault("items", java.util.List.of()));
         extra.put("processLines", routeSheet.getOrDefault("items", java.util.List.of()));
+        extra.put("materialStatus", "Release after MRP and accepted stock availability check");
 
         jdbc.update("""
             insert into erp_process_documents(process_type, document_no, reference_no, order_number, order_type, department, status, approval_status, remarks, extra_data, items)
-            values('wo', ?, ?, ?, 'Work Order', 'Production', 'Draft', 'Pending', 'WO generated with active BOM materials and route sheet processes', ?::jsonb, ?::jsonb)
+            values('wo', ?, ?, ?, 'Work Order', 'Production', 'Draft', 'Pending', 'WO generated with active Master BOM and Route Sheet', ?::jsonb, ?::jsonb)
             """, woNo, sourceNo, sourceNo, json(extra), json(sourceLines));
         Long woId = jdbc.queryForObject("select max(id) from erp_process_documents where process_type='wo' and document_no=?", Long.class, woNo);
         return java.util.Map.of("success", true, "message", "Work Order generated successfully", "workOrder", processDetail("wo", woId));
@@ -364,6 +407,51 @@ public class LegacyCompatController {
             insert into stock_ledger(item_id, ref_type, ref_id, inward_qty, outward_qty, balance_qty, stock_status, location, remarks)
             values(?,?,?,?,?,?,?,?,?)
             """, itemId, refType, refId, inward, outward, nextBalance, status, location, remarks);
+    }
+
+
+    @SuppressWarnings("unchecked")
+    private java.util.List<Map<String, Object>> asList(Object value) {
+        if (value instanceof java.util.List<?> list) return (java.util.List<Map<String, Object>>) value;
+        return java.util.List.of();
+    }
+
+    private String lineValue(Map<String, Object> line, String primary, String secondary, String fallback) {
+        Object value = line.get(primary);
+        if (value == null || String.valueOf(value).isBlank()) value = line.get(secondary);
+        return value == null || String.valueOf(value).isBlank() ? fallback : String.valueOf(value);
+    }
+
+    private java.util.Map<String, Object> activeBomForFg(String fgCode) {
+        java.util.List<Map<String, Object>> rows = Rows.list(jdbc, """
+            select * from erp_process_documents
+            where process_type='bom' and reference_no=? and coalesce(status,'Active') in ('Active','Released')
+            order by id desc limit 1
+            """, fgCode);
+        return rows.isEmpty() ? java.util.Map.of() : rows.get(0);
+    }
+
+    private java.util.Map<String, Object> activeRouteForFg(String fgCode) {
+        java.util.List<Map<String, Object>> rows = Rows.list(jdbc, """
+            select * from erp_process_documents
+            where process_type='routesheet' and reference_no=? and coalesce(status,'Released') in ('Active','Released')
+            order by id desc limit 1
+            """, fgCode);
+        return rows.isEmpty() ? java.util.Map.of() : rows.get(0);
+    }
+
+    private double latestStockForCode(String itemCode) {
+        Double balance = jdbc.queryForObject("""
+            select coalesce((
+                select sl.balance_qty
+                from stock_ledger sl
+                join items i on i.id = sl.item_id
+                where i.item_code = ? and coalesce(sl.stock_status,'Accepted') in ('Accepted','General','Store Stock')
+                order by sl.id desc
+                limit 1
+            ), 0)
+            """, Double.class, itemCode);
+        return balance == null ? 0 : balance;
     }
 
     private String json(Object value) {

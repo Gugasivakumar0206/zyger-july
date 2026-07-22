@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+﻿const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://127.0.0.1:8090' : '')
 
 const AUTH_TOKEN_KEY = 'erp_auth_token'
 const AUTH_USER_KEY = 'erp_auth_user'
@@ -621,3 +621,4 @@ export function saveCompanyInfo(payload) {
     body: JSON.stringify(payload),
   })
 }
+
