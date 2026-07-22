@@ -1,4 +1,4 @@
-import {
+﻿import {
   LayoutDashboard, Package, BarChart3, Settings,
   Building2, BookOpen, ShoppingCart, TrendingUp, Hammer,
   Users, Truck, PhoneCall, Target, Send, Megaphone,
@@ -66,7 +66,7 @@ export const NAV_MENU = [
     label: 'Planning',
     icon: BarChart3,
     children: [
-      { label: 'Bill of Material (BOM)', icon: FileStack, path: '/process/bom' },
+      { label: 'Master BOM', icon: FileStack, path: '/process/bom' },
       { label: 'Route Sheet', icon: GitBranch, path: '/process/routesheet' },
       { label: 'Material Requirement Planning (MRP)', icon: ClipboardList, path: '/process/mrp' },
     ],
@@ -166,3 +166,4 @@ export const NAV_MENU = [
     ],
   },
 ]
+
